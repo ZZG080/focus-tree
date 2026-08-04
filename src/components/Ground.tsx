@@ -1,5 +1,6 @@
-// 地面 V4：场景化配色（草/土色来自场景调色板）+ 积雪消融
+// 地面 V5：场景化配色（草/土色来自场景调色板）+ 积雪消融 + 成熟期草地变深（树荫反馈）
 // 结构：上 1/3 绿色草地，下 2/3 棕色泥土（种子落入棕色区域）
+import { memo } from 'react'
 import type { CustomScene } from '../types'
 
 interface GroundProps {
@@ -7,16 +8,21 @@ interface GroundProps {
   snowLevel: number
   /** 是否下雪中（控制天空雪花密度视觉） */
   isSnowy: boolean
+  /** 是否下雨中（控制地面涟漪） */
+  isRainy?: boolean
   /** 场景（配色） */
   scene?: CustomScene
+  /** 树是否进入成熟期（草地变深，象征树荫环境反馈） */
+  mature?: boolean
 }
 
-export function Ground({ snowLevel, isSnowy, scene }: GroundProps) {
+export const Ground = memo(function Ground({ snowLevel, isSnowy, isRainy = false, scene, mature = false }: GroundProps) {
   // 积雪高度：随 snowLevel 从草地顶部向下覆盖整个草地（上 1/3）
   const snowCoverY = 40 * (1 - Math.min(1, snowLevel))
   const snowOpacity = 0.4 + snowLevel * 0.6
-  // 场景配色（回退默认）
+  // 场景配色（回退默认）；成熟期草地变深（树荫）
   const grassColor = scene?.grass ?? '#6db95c'
+  const matureGrass = mature ? '#4a8a3e' : grassColor
   const dirtColor = scene?.dirt ?? '#a9713d'
 
   return (
@@ -75,18 +81,20 @@ export function Ground({ snowLevel, isSnowy, scene }: GroundProps) {
           <ellipse cx="150" cy="95" rx="6" ry="3.5" />
         </g>
 
-        {/* 绿色草地（上 1/3，起伏不平，带渐变） */}
+        {/* 绿色草地（上 1/3，起伏不平，带渐变）——成熟期变深（树荫） */}
         <path
           className="grass"
           d="M 0 40 L 0 8 C 40 -2, 80 14, 130 6 C 180 -2, 230 14, 280 6 C 330 -2, 380 12, 430 5 C 480 -2, 530 12, 580 6 C 630 0, 680 12, 730 6 C 780 0, 830 12, 880 6 C 930 0, 970 12, 1000 6 L 1000 40 Z"
-          fill="url(#grassGrad)"
+          fill={matureGrass}
+          style={{ transition: 'fill 1.5s ease' }}
         />
-        {/* 草地暗部（边缘阴影，增加立体感） */}
+        {/* 草地暗部（边缘阴影，增加立体感）——成熟期同步加深 */}
         <path
-          className="grass-shade"
-          d="M 0 40 L 0 28 C 60 22, 130 30, 200 26 C 280 22, 360 30, 440 26 C 520 22, 600 30, 680 26 C 760 22, 850 30, 1000 26 L 1000 40 Z"
-          fill="#4a8a3e"
-          opacity="0.35"
+        className="grass-shade"
+        d="M 0 40 L 0 28 C 60 22, 130 30, 200 26 C 280 22, 360 30, 440 26 C 520 22, 600 30, 680 26 C 760 22, 850 30, 1000 26 L 1000 40 Z"
+        fill={mature ? '#3a7232' : '#4a8a3e'}
+        opacity="0.35"
+        style={{ transition: 'fill 1.5s ease' }}
         />
         {/* 草叶（两簇不同深浅） */}
         <g className="grass-blades" stroke="#5aa04a" strokeWidth="0.8">
@@ -155,7 +163,30 @@ export function Ground({ snowLevel, isSnowy, scene }: GroundProps) {
             <circle cx="880" cy={31 - snowLevel * 18} r="2.5" />
           </g>
         )}
+        {/* 雨天：雨落地涟漪（泥土表面的扩散圆环，音画同步感） */}
+        {isRainy && (
+          <g className="ripples" stroke="#7fa8cc" fill="none" strokeWidth="1.2" opacity="0.5">
+            {[
+              { cx: 120, cy: 72, delay: 0 },
+              { cx: 300, cy: 88, delay: 0.5 },
+              { cx: 470, cy: 66, delay: 1.0 },
+              { cx: 640, cy: 92, delay: 0.3 },
+              { cx: 810, cy: 70, delay: 0.8 },
+              { cx: 930, cy: 85, delay: 1.2 },
+            ].map((r, i) => (
+              <ellipse
+                key={`ripple-${i}`}
+                className="ripple"
+                cx={r.cx}
+                cy={r.cy}
+                rx="10"
+                ry="3.5"
+                style={{ animationDelay: `${r.delay}s` }}
+              />
+            ))}
+          </g>
+        )}
       </svg>
     </div>
   )
-}
+})
