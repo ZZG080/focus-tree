@@ -76,6 +76,10 @@ export interface PlantedTree {
   index: number
   /** 种植时间戳 */
   plantedAt: number
+  /** 出生天气（天气遗产：雨天树带露珠，雪天树带积雪，永久独特特征） */
+  birthWeather?: Weather
+  /** 稀有变异（极低概率的金色树等收藏品） */
+  variant?: 'golden'
 }
 
 /** 会话快照（用于刷新后断点恢复） */
