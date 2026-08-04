@@ -483,7 +483,40 @@
 
 /* ---- 响应式 ---- */
 @media (max-width: 600px) {
-  .timer-bar { min-width: 200px; padding: 6px 16px; }
+  .timer-bar { min-width: 200px; padding: 6px 16px; top: 12px; }
   .timer-text { font-size: 22px; }
   .controls { bottom: 14px; }
+  .weather-switcher { top: 12px; right: 12px; }
+  .weather-btn { width: 30px; height: 30px; font-size: 15px; }
+
+  /* 手机竖屏：计时条与天气切换避免重叠（顶部两角分布） */
+  .timer-bar { left: 12px; transform: none; }
+  .weather-switcher { top: 12px; right: 12px; }
+
+  /* 提示条更窄 */
+  .mature-toast, .wither-toast {
+    top: 82px;
+    max-width: calc(100% - 32px);
+    font-size: 12px;
+    padding: 8px 14px;
+    white-space: normal;
+    text-align: center;
+  }
+  .intro-overlay p { font-size: 15px; padding: 12px 18px; }
+}
+
+/* 手机横屏/小高度：进一步压缩 */
+@media (max-height: 500px) {
+  .timer-bar { min-width: 180px; padding: 4px 12px; }
+  .timer-text { font-size: 18px; }
+  .timer-sub { font-size: 10px; }
+  .controls .ghost-btn { padding: 6px 14px; font-size: 12px; }
+}
+
+/* 桌面大屏：场景更宽阔，UI 元素更大 */
+@media (min-width: 1024px) {
+  .timer-bar { min-width: 300px; padding: 12px 32px; }
+  .timer-text { font-size: 38px; }
+  .controls .ghost-btn { padding: 12px 30px; font-size: 15px; }
+  .weather-btn { width: 40px; height: 40px; font-size: 20px; }
 }
