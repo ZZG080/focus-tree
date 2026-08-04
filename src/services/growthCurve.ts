@@ -24,11 +24,13 @@ const STAGE_RATIOS: Array<{ at: number; until: number; stage: GrowthStage }> = [
 /**
  * 天气对生长速度的影响系数（倍率）
  * 雨天加快约 15%（不要快太多）
+ * storm（挑战模式暴风雨）变慢 40%——恶劣天气，但完成奖励双倍
  */
 export const WEATHER_GROWTH_RATE: Record<Weather, number> = {
   sunny: 1,
   rainy: 1.15,
   snowy: 1,
+  storm: 0.6,
 }
 
 /** 浮点容差：避免 90/1.15*1.15=89.999... 这类精度问题 */
