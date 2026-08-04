@@ -1,0 +1,489 @@
+/* ============ 专注场景（天空/地面/树/动画） ============ */
+
+.focus-view {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+}
+
+/* 天气天空配色 */
+.sky-sunny {
+  background: linear-gradient(180deg, #7ec8f2 0%, #d8f0fb 100%);
+}
+
+.sky-rainy {
+  background: linear-gradient(180deg, #5a7d96 0%, #8faebf 100%);
+}
+
+.sky-snowy {
+  background: linear-gradient(180deg, #9db4c4 0%, #d6e2ea 100%);
+}
+
+/* ---- 场景容器：天空 5 : 地面 1 ---- */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sky {
+  flex: 5;
+  position: relative;
+  overflow: hidden;
+}
+
+.sky-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ground {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-top: 2px solid rgba(122, 82, 48, 0.25);
+}
+
+.ground.snowy {
+  border-top-color: rgba(200, 215, 225, 0.5);
+}
+
+.ground-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---- 天气粒子动画（错开时长，真实感） ---- */
+@keyframes rainFall {
+  0% { transform: translate(0, -30px); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translate(-26px, 640px); opacity: 0; }
+}
+
+.rain-drop {
+  /* 每颗粒子用内联 animation-duration/delay 错开，消除同步假感 */
+  will-change: transform, opacity;
+}
+
+.rain-back .rain-drop {
+  animation-name: rainFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.rain-fore .rain-drop {
+  animation-name: rainFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes snowFall {
+  0% { transform: translate(0, -40px) scale(0.8); opacity: 0; }
+  6% { opacity: var(--snow-op, 0.9); }
+  50% { transform: translate(var(--drift, 20px), 300px) scale(1); }
+  94% { opacity: var(--snow-op, 0.9); }
+  100% { transform: translate(calc(var(--drift, 20px) * 0.4), 660px) scale(0.85); opacity: 0; }
+}
+
+.snow-flake {
+  /* 雪花用 --drift 变量实现横向飘摆 + 柔和淡入淡出 */
+  will-change: transform, opacity;
+  animation-name: snowFall;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  --snow-op: 0.9;
+}
+
+.snow-back .snow-flake {
+  --snow-op: 0.45;
+}
+
+/* 下雪时雪花堆叠在草地上的过渡（无闪烁，支持消融渐变） */
+.snow-layer {
+  transition: opacity 2s ease;
+}
+
+.snow-pile {
+  transition: opacity 1.2s ease, d 0s;
+  will-change: opacity;
+}
+
+/* ---- 场景粒子动画 ---- */
+@keyframes fireflyGlow {
+  0%, 100% { opacity: 0.15; transform: translate(0, 0); }
+  30% { opacity: 0.95; transform: translate(10px, -12px); }
+  60% { opacity: 0.4; transform: translate(-8px, 8px); }
+  80% { opacity: 0.9; transform: translate(6px, -6px); }
+}
+
+.firefly {
+  animation-name: fireflyGlow;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 4px rgba(255, 233, 138, 0.9));
+}
+
+@keyframes leafSway {
+  0% { transform: translate(0, -30px) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.9; }
+  50% { transform: translate(40px, 280px) rotate(120deg); opacity: 0.8; }
+  90% { opacity: 0.7; }
+  100% { transform: translate(-20px, 620px) rotate(240deg); opacity: 0; }
+}
+
+.leaf-drop {
+  animation-name: leafSway;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes sakuraFall {
+  0% { transform: translate(0, -20px); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: translate(30px, 640px); opacity: 0; }
+}
+
+.sakura-petal {
+  animation-name: sakuraFall;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+/* ---- 树的 SVG 层 ---- */
+/* 根系层：在泥土之下（z 小于 ground），根扎进土里 */
+.tree-roots-svg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* 地面层：覆盖根系，露出土表的部分根 */
+.ground {
+  position: relative;
+  z-index: 5;
+}
+
+/* 地上层：树干/树冠在泥土之上 */
+.tree-svg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* 种子落下动画 */
+@keyframes seedFall {
+  0% { transform: translateY(-560px); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.seed-falling {
+  animation: seedFall 0.9s cubic-bezier(0.55, 0, 0.85, 0.36) forwards;
+}
+
+/* 种子入土 */
+.seed-buried {
+  transform: translateY(14px);
+  opacity: 0.55;
+  transition: transform 0.6s ease-in, opacity 0.6s ease-in;
+}
+
+/* 镜头聚焦 */
+@keyframes treeFocus {
+  0% { transform: scale(1); opacity: 1; }
+  30% { transform: scale(2.6); opacity: 1; }
+  70% { transform: scale(2.6); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tree-focus-anim {
+  animation: treeFocus 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  transform-origin: 500px 580px;
+}
+
+/* 聚焦闪光 */
+.focus-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.55), transparent 60%);
+  animation: flashFade 0.9s ease-out forwards;
+  z-index: 20;
+  pointer-events: none;
+}
+
+@keyframes flashFade {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---- 场景氛围：柔和暗角，聚焦中心 ---- */
+.scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 60%, transparent 55%, rgba(40, 70, 40, 0.1) 100%);
+  z-index: 15;
+}
+
+/* ---- 太阳光晕 ---- */
+.sun {
+  animation: sunPulse 5s ease-in-out infinite;
+}
+
+@keyframes sunPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.92; transform: scale(1.04); }
+}
+
+/* ---- 云朵漂浮 ---- */
+.cloud {
+  animation: cloudDrift 28s ease-in-out infinite alternate;
+}
+
+.cloud-1 { animation-duration: 32s; }
+.cloud-2 { animation-duration: 40s; animation-delay: -8s; }
+.cloud-3 { animation-duration: 36s; animation-delay: -18s; }
+
+@keyframes cloudDrift {
+  from { transform: translateX(-18px); }
+  to { transform: translateX(24px); }
+}
+
+.birds {
+  animation: birdFly 24s ease-in-out infinite alternate;
+}
+
+@keyframes birdFly {
+  from { transform: translateX(0); }
+  to { transform: translateX(40px); }
+}
+
+/* ---- 天气切换按钮 ---- */
+.weather-switcher {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 30;
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  padding: 5px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 6px 20px rgba(46, 78, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.weather-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+  background: transparent;
+}
+
+.weather-btn:hover {
+  background: rgba(232, 242, 232, 0.9);
+  transform: scale(1.12);
+}
+
+.weather-btn.active {
+  background: linear-gradient(180deg, #5cb85c, #3e8e41);
+  box-shadow: 0 3px 10px rgba(62, 142, 65, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ---- 计时条 ---- */
+.timer-bar {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 22px;
+  padding: 10px 26px;
+  min-width: 260px;
+  text-align: center;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 8px 32px rgba(46, 78, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.timer-text {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  color: var(--text-main);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #e4efe4;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8bc34a, #4caf50, #2e7d32);
+  border-radius: 999px;
+  transition: width 0.5s linear;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+}
+
+.timer-sub {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+}
+
+/* ---- 控制按钮 ---- */
+.controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 6px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(46, 78, 42, 0.14);
+}
+
+.controls .ghost-btn {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  padding: 9px 22px;
+  border: 1px solid #d8e8d8;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.controls .ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.controls .ghost-btn.danger {
+  color: #c0392b;
+  border-color: #f0c4bd;
+}
+
+.controls .ghost-btn.danger:hover {
+  background: #fdf0ee;
+}
+
+/* ---- 介绍浮层 ---- */
+.intro-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(126, 200, 242, 0.25), rgba(216, 240, 251, 0.3));
+}
+
+.intro-overlay p {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 14px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 28px rgba(46, 78, 42, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeUp 0.5s ease-out;
+  letter-spacing: 0.5px;
+}
+
+/* ---- 大树长成提示 ---- */
+.mature-toast {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 28;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--leaf-dark);
+  box-shadow: 0 8px 28px rgba(46, 78, 42, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeUp 0.4s ease-out;
+}
+
+/* ---- 枯树提示 ---- */
+.wither-toast {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 28;
+  background: rgba(74, 66, 56, 0.9);
+  border: 1px solid rgba(120, 110, 96, 0.6);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: #e8e0d0;
+  box-shadow: 0 8px 28px rgba(40, 30, 20, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeUp 0.4s ease-out;
+}
+
+/* ---- 迷你森林剪影 ---- */
+.mini-forest ellipse {
+  animation: fadeUp 0.6s ease-out;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 600px) {
+  .timer-bar { min-width: 200px; padding: 6px 16px; }
+  .timer-text { font-size: 22px; }
+  .controls { bottom: 14px; }
+}
