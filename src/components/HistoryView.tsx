@@ -1,7 +1,8 @@
-// 历史视图 V5：森林统计 + 树种图鉴收集 + 专注记录列表
+// 历史视图 V6：森林统计 + 森林地图 + 树种图鉴收集 + 专注记录列表
+// V6 新增：森林地图（2D 网格可视化森林）+ 挑战模式双倍奖励标记
 import { useEffect, useMemo, useState } from 'react'
 import type { FocusRecord } from '../types'
-import { getRecords } from '../services/storageService'
+import { getRecordsAsync } from '../services/storageService'
 import { TREE_SPECIES } from '../services/treeSpecies'
 
 interface HistoryViewProps {
@@ -17,13 +18,35 @@ const WEATHER_ICON: Record<string, string> = {
   sunny: '☀️',
   rainy: '🌧️',
   snowy: '❄️',
+  storm: '⛈️',
+}
+
+/** 按树种 id 取 emoji（图鉴对照） */
+function speciesEmoji(id?: string): string {
+  if (!id) return '🌳'
+  const sp = TREE_SPECIES.find((s) => s.id === id)
+  return sp?.emoji ?? '🌳'
+}
+
+/** 天气中文名 */
+function weatherName(w?: string): string {
+  if (w === 'rainy') return '雨天'
+  if (w === 'snowy') return '雪天'
+  if (w === 'storm') return '暴风雨挑战'
+  return '晴天'
 }
 
 export function HistoryView({ onBack }: HistoryViewProps) {
   const [records, setRecords] = useState<FocusRecord[]>([])
 
   useEffect(() => {
-    setRecords(getRecords())
+    let alive = true
+    getRecordsAsync().then((rs) => {
+      if (alive) setRecords(rs)
+    })
+    return () => {
+      alive = false
+    }
   }, [])
 
   const stats = useMemo(() => {
@@ -79,6 +102,34 @@ export function HistoryView({ onBack }: HistoryViewProps) {
         </div>
       </div>
 
+      {/* 森林地图：2D 网格可视化——每格一棵会话树，形成真正的森林 */}
+      {records.length > 0 && (
+        <div className="forest-map-panel">
+          <div className="collection-header">
+            <h2>🗺️ 森林地图</h2>
+            <span className="collection-progress">最近 {Math.min(records.length, 48)} 次专注</span>
+          </div>
+          <div className="forest-map" role="img" aria-label={`森林地图：共 ${records.length} 棵树`}>
+            {records.slice(0, 48).map((r, i) => {
+              const n = r.treeCount ?? 1
+              const isStorm = r.weather === 'storm' || r.challengeBonus
+              return (
+                <div
+                  key={r.id}
+                  className={`map-cell ${i % 2 === 0 ? 'row-a' : 'row-b'} ${isStorm ? 'storm-cell' : ''}`}
+                  title={`${formatDate(r.startedAt)} · ${r.actualMinutes} 分钟 · ${n} 棵树${isStorm ? ' · ⚡挑战' : ''}`}
+                >
+                  <span className="map-tree">{speciesEmoji(r.speciesId)}</span>
+                  {n > 1 && <span className="map-count">×{n}</span>}
+                  {isStorm && <span className="map-storm">⚡</span>}
+                </div>
+              )
+            })}
+            {records.length > 48 && <div className="map-more">… 还有 {records.length - 48} 棵</div>}
+          </div>
+        </div>
+      )}
+
       {/* 树种图鉴 */}
       <div className="collection-panel">
         <div className="collection-header">
@@ -130,11 +181,12 @@ export function HistoryView({ onBack }: HistoryViewProps) {
                   <div>
                     <div className="record-title">
                       {r.actualMinutes} 分钟 · {r.treeCount ?? 1} 棵树
+                      {r.challengeBonus ? ' ⚡挑战双倍' : ''}
                       {r.completed ? '' : '（提前结束）'}
                     </div>
                     <div className="record-sub">
                       {formatDate(r.startedAt)} · 计划 {r.plannedMinutes} 分钟
-                      {r.weather ? ` · ${WEATHER_ICON[r.weather] ?? ''}${r.weather === 'rainy' ? '雨天' : r.weather === 'snowy' ? '雪天' : '晴天'}` : ''}
+                      {r.weather ? ` · ${WEATHER_ICON[r.weather] ?? ''}${weatherName(r.weather)}` : ''}
                     </div>
                   </div>
                 </div>
