@@ -1,6 +1,7 @@
 // 树渲染组件：仅负责把 treeMath 计算结果渲染为 SVG
 // 数学逻辑已拆分到 services/treeMath.ts（纯函数，可单测）
 import { memo, useMemo } from 'react'
+import type { CSSProperties } from 'react'
 import type { GrowthState, Season, Weather } from '../types'
 import type { TreeSpecies } from '../services/treeSpecies'
 import { getSpecies } from '../services/treeSpecies'
@@ -49,6 +50,22 @@ interface TreeLayersProps {
 const MATURE_GROWTH: GrowthState = { stage: 'tree', phaseProgress: 1, totalProgress: 1 }
 
 /**
+ * 描边生长动画样式：stroke-dashoffset 与 totalProgress 同步。
+ * 所有描边路径带 pathLength="100"（SVG 归一化长度），因此：
+ *   dasharray = "100 100"（虚线单元 = 整条路径长度）
+ *   dashoffset = 100 * (1 - totalProgress)（偏移量随生长进度缩小 → 路径从起点"画"到终点）
+ * 静态树（totalProgress=1）offset=0 → 完整显示，无动画开销。
+ */
+function growStrokeStyle(totalProgress: number, staticTree: boolean): CSSProperties {
+  if (staticTree) return {}
+  const t = Math.max(0, Math.min(1, totalProgress))
+  return {
+    strokeDasharray: '100 100',
+    strokeDashoffset: `${100 * (1 - t)}`,
+  }
+}
+
+/**
  * 根系层组件：单独渲染根系，用于"泥土之下"图层
  * 树根扎进土里，从泥土边缘露出——真实"有根"效果
  * memo + 生长阈值比较：rAF 每帧 elapsedMs 变化不触发重渲染
@@ -83,12 +100,14 @@ export const TreeRoots = memo(function TreeRoots({
   if (!rootsHtml) return null
   return (
     <g
+      className="tree-grow-stroke"
       style={{
         opacity,
         filter: blurAmount > 0 ? `blur(${blurAmount}px)` : undefined,
+        ...growStrokeStyle(effGrowth.totalProgress, staticTree),
       }}
     >
-      {/* 根从树干底部两侧向泥土深处延伸 */}
+      {/* 根从树干底部两侧向泥土深处延伸（描边绘制生长动画） */}
       <g dangerouslySetInnerHTML={{ __html: rootsHtml }} />
     </g>
   )
@@ -198,26 +217,41 @@ export const TreeLayers = memo(function TreeLayers({
 
   return (
     <g
-      className={`${focusing ? 'tree-focus-anim' : ''} ${paused ? 'tree-paused-glow' : ''}`}
+      className={`${focusing ? 'tree-focus-anim' : ''} ${paused ? 'tree-paused-glow' : ''} ${staticTree ? 'tree-hoverable' : 'tree-growing-glow'}`}
       style={{
         transformOrigin: `${cx}px ${GROUND_Y}px`,
         opacity,
         filter: filterStyle,
       }}
     >
-      {/* 树枝分叉（树干之后渲染，压在主干上；手绘滤镜） */}
+      {/* 树枝分叉：描边绘制动画（stroke-dashoffset 随 totalProgress 展开）+ 手绘纸纹滤镜 */}
       {branchesHtml && (
-        <g filter={handDrawn ? 'url(#roughness)' : undefined} dangerouslySetInnerHTML={{ __html: branchesHtml }} />
+        <g
+          className="tree-grow-stroke"
+          style={growStrokeStyle(effGrowth.totalProgress, staticTree)}
+          filter={handDrawn ? 'url(#rough-paper)' : undefined}
+          dangerouslySetInnerHTML={{ __html: branchesHtml }}
+        />
       )}
 
-      {/* 树干/茎（底部深入泥土，与根系连接；手绘滤镜） */}
+      {/* 树干/茎（底部深入泥土，与根系连接；手绘纸纹滤镜） */}
       {trunkHtml && (
-        <g filter={handDrawn ? 'url(#roughness)' : undefined} dangerouslySetInnerHTML={{ __html: trunkHtml }} />
+        <g
+          className="tree-grow-stroke"
+          style={growStrokeStyle(effGrowth.totalProgress, staticTree)}
+          filter={handDrawn ? 'url(#rough-paper)' : undefined}
+          dangerouslySetInnerHTML={{ __html: trunkHtml }}
+        />
       )}
 
-      {/* 树冠（按树种形状 + 季节配色 + 枯树形态；叶片渐显弹出动画） */}
+      {/* 树冠（按树种形状 + 季节配色 + 枯树形态；叶片渐显弹出动画；悬停时轻微摇摆） */}
       {crownHtml && (
-        <g className="crown-grow" filter={handDrawn ? 'url(#roughness)' : undefined} dangerouslySetInnerHTML={{ __html: crownHtml }} />
+        <g
+          className="crown-grow tree-crown-sway"
+          style={{ transformOrigin: `${cx}px ${TRUNK_BASE}px` }}
+          filter={handDrawn ? 'url(#rough-paper)' : undefined}
+          dangerouslySetInnerHTML={{ __html: crownHtml }}
+        />
       )}
 
       {/* 动态光影：树影随太阳方向移动（太阳左→阴影右，正午最短） */}
