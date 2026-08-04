@@ -1,21 +1,21 @@
 /* ============ 全局样式与设计变量 ============ */
 :root {
-  /* 主题色：清新绿 + 蓝天 */
-  --sky-top: #7ec8f2;
-  --sky-bottom: #d8f0fb;
-  --grass: #6db95c;
-  --grass-light: #8fd07c;
-  --dirt: #a9713d;
-  --dirt-dark: #8a5a2c;
-  --leaf: #5cb85c;
-  --leaf-dark: #3e8e41;
-  --trunk: #8a5a34;
+  /* 主题色：静谧夜林（深色沉浸）+ 发光绿 */
+  --sky-top: #1e293b;
+  --sky-bottom: #0f172a;
+  --grass: #2d6a43;
+  --grass-light: #3f8a55;
+  --dirt: #3d2c1e;
+  --dirt-dark: #2a1d13;
+  --leaf: #4ade80;
+  --leaf-dark: #2f7d46;
+  --trunk: #6b4a30;
 
   /* 生长状态色（设计语言统一） */
   --growth-seed: #8a5a34;      /* 种子褐 */
-  --growth-sprout: #8fd07c;    /* 嫩绿（发芽） */
-  --growth-young: #5cb85c;     /* 幼绿（苗期） */
-  --growth-mature: #2e7d32;    /* 深绿（长成） */
+  --growth-sprout: #4ade80;    /* 嫩绿（发芽） */
+  --growth-young: #34d399;     /* 幼绿（苗期） */
+  --growth-mature: #4ade80;    /* 深绿（长成） */
 
   /* 间距系统（0.25rem 倍数） */
   --space-xs: 0.25rem;   /* 4px */
@@ -28,15 +28,15 @@
   --radius: 16px;
   --radius-sm: 10px;
 
-  /* 文字 */
-  --text-main: #2f3e2e;
-  --text-sub: #5c6b58;
+  /* 文字（Slate 系） */
+  --text-main: #f8fafc;
+  --text-sub: #94a3b8;
   --text-light: #ffffff;
 
-  /* 卡片 */
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --card-border: #cfe3cf;
-  --shadow: 0 8px 24px rgba(46, 78, 42, 0.12);
+  /* 卡片：玻璃拟态 */
+  --card-bg: rgba(15, 23, 42, 0.6);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -53,7 +53,9 @@ body,
 
 body {
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
-  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+  /* 深色沉浸背景：中心微亮、四周渐暗（夜间森林氛围） */
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+  background-attachment: fixed;
   color: var(--text-main);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -70,6 +72,15 @@ button {
   background: none;
 }
 
+/* ============ 玻璃拟态面板（所有卡片统一） ============ */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
 /* ============ 设置视图 ============ */
 .setup-view {
   height: 100%;
@@ -79,21 +90,21 @@ button {
   padding: 20px;
   overflow-y: auto;
   background:
-    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.35) 0%, transparent 45%),
-    radial-gradient(circle at 85% 75%, rgba(94, 176, 92, 0.18) 0%, transparent 40%),
-    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    radial-gradient(circle at 15% 20%, rgba(74, 222, 128, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(74, 222, 128, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
 }
 
 .setup-card {
   width: 100%;
   max-width: 460px;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 253, 248, 0.9) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   box-shadow:
-    0 20px 48px rgba(46, 78, 42, 0.16),
-    0 2px 8px rgba(46, 78, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 20px 48px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   padding: 32px 28px;
@@ -102,7 +113,7 @@ button {
   position: relative;
 }
 
-/* 卡片顶部渐变光条 */
+/* 卡片顶部渐变光条（发光绿） */
 .setup-card::before {
   content: '';
   position: absolute;
@@ -111,8 +122,9 @@ button {
   right: 24px;
   height: 3px;
   border-radius: 0 0 4px 4px;
-  background: linear-gradient(90deg, transparent, #6db95c, #3e8e41, #6db95c, transparent);
-  opacity: 0.7;
+  background: linear-gradient(90deg, transparent, #4ade80, #2f7d46, #4ade80, transparent);
+  opacity: 0.8;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
 }
 
 .setup-title {
@@ -1925,4 +1937,135 @@ button {
   .timer-text { font-size: 22px; }
   .controls { bottom: 8px; }
   .weather-switcher { top: 8px; right: 8px; }
+}
+
+/* ============================================================
+   静谧夜林·发光手绘 主题覆写段（V9）
+   覆盖所有浅色卡片/按钮/输入为深色玻璃拟态；定义发光强调色
+   ============================================================ */
+
+/* ---- 玻璃拟态面板统一（历史/周报/场景/结果卡片） ---- */
+.result-card,
+.collection-panel,
+.forest-banner,
+.forest-map-panel,
+.scene-panel,
+.scene-item,
+.report-panel,
+.report-card,
+.stats-row .stat,
+.record-item,
+.record-item.incomplete {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 记录列表项 hover 发光微交互 */
+.record-item:hover {
+  border-color: rgba(74, 222, 128, 0.35) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 0 18px rgba(74, 222, 128, 0.12) !important;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* ---- 文本（Slate 系） ---- */
+.history-view h1, .history-view h2,
+.report-view h1, .report-view h2,
+.scene-studio h1, .scene-studio h2,
+.result-card h2,
+.setup-title {
+  color: #f8fafc !important;
+}
+.record-sub, .picker-hint, .collection-desc,
+.result-msg, .stat-label, .count-label,
+.record-msg, .scene-item-desc {
+  color: #94a3b8 !important;
+}
+
+/* ---- 输入控件深色化 ---- */
+.custom-input,
+.city-select {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.custom-input::placeholder {
+  color: #64748b !important;
+}
+
+/* ---- 激活/强调态：发光绿 ---- */
+.weather-option.active,
+.growth-option.active,
+.species-option.active,
+.collection-card:not(.locked),
+.link-toggle.on {
+  border-color: rgba(74, 222, 128, 0.6) !important;
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.25) !important;
+  color: #f8fafc !important;
+}
+.start-btn, .save-btn {
+  background: linear-gradient(135deg, #22c55e, #15803d) !important;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.35) !important;
+}
+.start-btn:hover, .save-btn:hover {
+  box-shadow: 0 0 30px rgba(74, 222, 128, 0.55) !important;
+}
+
+/* 结果卡双倍奖励徽章 */
+.bonus-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  background: linear-gradient(135deg, #4ade80, #a3e635);
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.5);
+  vertical-align: middle;
+}
+
+/* ---- 高对比度模式（无障碍：黑白 + 高饱和强调） ---- */
+body.high-contrast {
+  background: radial-gradient(circle at center, #000000 0%, #111111 100%) !important;
+}
+body.high-contrast,
+body.high-contrast .history-view h1,
+body.high-contrast .history-view h2,
+body.high-contrast .report-view h1,
+body.high-contrast .report-view h2,
+body.high-contrast .result-card h2,
+body.high-contrast .setup-title {
+  color: #ffffff !important;
+}
+body.high-contrast .record-sub,
+body.high-contrast .picker-hint,
+body.high-contrast .stat-label,
+body.high-contrast .result-msg {
+  color: #e0e0e0 !important;
+}
+body.high-contrast .result-card,
+body.high-contrast .collection-panel,
+body.high-contrast .setup-card,
+body.high-contrast .record-item {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+}
+body.high-contrast .start-btn,
+body.high-contrast .save-btn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: none !important;
+}
+body.high-contrast .weather-option.active,
+body.high-contrast .growth-option.active {
+  border-color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* ---- 低性能设备（移动端）：关闭重滤镜，保留基础效果 ---- */
+@media (max-width: 1079px) {
+  .tree-crown-sway { animation: none !important; }
 }
