@@ -10,13 +10,62 @@ interface GroundProps {
   isSnowy: boolean
   /** 是否下雨中（控制地面涟漪） */
   isRainy?: boolean
+  /** 是否暴风雨中（挑战模式：涟漪更密更快） */
+  isStorm?: boolean
   /** 场景（配色） */
   scene?: CustomScene
   /** 树是否进入成熟期（草地变深，象征树荫环境反馈） */
   mature?: boolean
+  /** 连携效应装饰：连续同种树触发的小树林点缀（蘑菇/小花） */
+  companions?: Array<{ x: number; type: 'mushroom' | 'flower' }>
 }
 
-export const Ground = memo(function Ground({ snowLevel, isSnowy, isRainy = false, scene, mature = false }: GroundProps) {
+/** 连携点缀：蘑菇（手绘小伞） */
+function Mushroom({ cx, cy, scale = 1, red = false }: { cx: number; cy: number; scale?: number; red?: boolean }) {
+  return (
+    <g transform={`translate(${cx} ${cy}) scale(${scale})`}>
+      {/* 菌柄 */}
+      <path d="M -2.5 0 Q -3 6 -1 9 L 1 9 Q 3 6 2.5 0 Z" fill="#f2e6d4" stroke="#c9b392" strokeWidth="0.6" />
+      {/* 菌盖 */}
+      <path d="M -7 -1 Q -7 -7 0 -7 Q 7 -7 7 -1 Q 0 -3.5 -7 -1 Z" fill={red ? '#d96c5a' : '#c98a5a'} stroke={red ? '#a04a3c' : '#96603a'} strokeWidth="0.6" />
+      {/* 白点 */}
+      <circle cx="-3" cy="-4" r="0.9" fill="#fff" opacity="0.9" />
+      <circle cx="1.5" cy="-3" r="0.7" fill="#fff" opacity="0.9" />
+    </g>
+  )
+}
+
+/** 连携点缀：小花（五瓣手绘小花） */
+function Flower({ cx, cy, scale = 1, color = '#f0a8c0' }: { cx: number; cy: number; scale?: number; color?: string }) {
+  return (
+    <g transform={`translate(${cx} ${cy}) scale(${scale})`}>
+      {[0, 72, 144, 216, 288].map((deg) => (
+        <ellipse
+          key={deg}
+          cx={0}
+          cy={-3.4}
+          rx="2.4"
+          ry="3"
+          fill={color}
+          stroke="#c97a98"
+          strokeWidth="0.4"
+          transform={`rotate(${deg})`}
+        />
+      ))}
+      <circle cx="0" cy="0" r="1.8" fill="#f7c948" />
+    </g>
+  )
+}
+
+export const Ground = memo(function Ground({
+  snowLevel,
+  isSnowy,
+  isRainy = false,
+  isStorm = false,
+  scene,
+  mature = false,
+  companions = [],
+}: GroundProps) {
   // 积雪高度：随 snowLevel 从草地顶部向下覆盖整个草地（上 1/3）
   const snowCoverY = 40 * (1 - Math.min(1, snowLevel))
   const snowOpacity = 0.4 + snowLevel * 0.6
@@ -163,17 +212,29 @@ export const Ground = memo(function Ground({ snowLevel, isSnowy, isRainy = false
             <circle cx="880" cy={31 - snowLevel * 18} r="2.5" />
           </g>
         )}
-        {/* 雨天：雨落地涟漪（泥土表面的扩散圆环，音画同步感） */}
-        {isRainy && (
-          <g className="ripples" stroke="#7fa8cc" fill="none" strokeWidth="1.2" opacity="0.5">
-            {[
-              { cx: 120, cy: 72, delay: 0 },
-              { cx: 300, cy: 88, delay: 0.5 },
-              { cx: 470, cy: 66, delay: 1.0 },
-              { cx: 640, cy: 92, delay: 0.3 },
-              { cx: 810, cy: 70, delay: 0.8 },
-              { cx: 930, cy: 85, delay: 1.2 },
-            ].map((r, i) => (
+        {/* 雨天/暴风雨：雨落地涟漪（泥土表面的扩散圆环，音画同步感） */}
+        {(isRainy || isStorm) && (
+          <g className="ripples" stroke={isStorm ? '#8fa6bd' : '#7fa8cc'} fill="none" strokeWidth="1.2" opacity={isStorm ? 0.6 : 0.5}>
+            {(isStorm
+              ? [
+                  { cx: 80, cy: 78, delay: 0 },
+                  { cx: 180, cy: 92, delay: 0.3 },
+                  { cx: 300, cy: 70, delay: 0.6 },
+                  { cx: 420, cy: 88, delay: 0.1 },
+                  { cx: 540, cy: 66, delay: 0.5 },
+                  { cx: 660, cy: 92, delay: 0.9 },
+                  { cx: 780, cy: 72, delay: 0.2 },
+                  { cx: 900, cy: 86, delay: 0.7 },
+                ]
+              : [
+                  { cx: 120, cy: 72, delay: 0 },
+                  { cx: 300, cy: 88, delay: 0.5 },
+                  { cx: 470, cy: 66, delay: 1.0 },
+                  { cx: 640, cy: 92, delay: 0.3 },
+                  { cx: 810, cy: 70, delay: 0.8 },
+                  { cx: 930, cy: 85, delay: 1.2 },
+                ]
+            ).map((r, i) => (
               <ellipse
                 key={`ripple-${i}`}
                 className="ripple"
@@ -181,10 +242,19 @@ export const Ground = memo(function Ground({ snowLevel, isSnowy, isRainy = false
                 cy={r.cy}
                 rx="10"
                 ry="3.5"
-                style={{ animationDelay: `${r.delay}s` }}
+                style={{ animationDelay: `${r.delay}s`, animationDuration: isStorm ? '0.9s' : undefined }}
               />
             ))}
           </g>
+        )}
+
+        {/* 连携效应：连续 3 棵同种树 → 树旁长出蘑菇/小花丛（小树林氛围） */}
+        {companions.map((c, i) =>
+          c.type === 'mushroom' ? (
+            <Mushroom key={`cp-${i}`} cx={c.x} cy={30} scale={1 + (i % 3) * 0.25} red={i % 2 === 0} />
+          ) : (
+            <Flower key={`cp-${i}`} cx={c.x} cy={30} scale={1 + (i % 3) * 0.2} color={i % 2 === 0 ? '#f0a8c0' : '#f7d27a'} />
+          )
         )}
       </svg>
     </div>
