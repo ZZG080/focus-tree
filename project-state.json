@@ -1,0 +1,11 @@
+{
+  "name": "FocusTree",
+  "type": "web-app",
+  "goal": "把每次专注时间可视化为种一棵树，随真实时间成长，支持 AI 鼓励语与专注记录",
+  "status": "building",
+  "technology": "React 18.3 + Vite 6 + TypeScript + CSS",
+  "current_phase": "V3 迭代完成：生长周期可配置 + 真实粒子效果 + 视觉升级",
+  "next_task": "用户实测反馈 V3",
+  "bugs": 0,
+  "deployment": "not_deployed"
+}
