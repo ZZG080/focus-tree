@@ -25,16 +25,20 @@ export function useDebouncedWindowSize(delay = 200): { width: number; height: nu
   const sizeRef = useRef(size)
   sizeRef.current = size
 
+  // 关键：防抖回调必须在组件顶层创建（useDebouncedCallback 内部使用 useRef，
+  // 在 useEffect 回调里调用含 hooks 的函数会触发 React 开发构建的
+  // "Invalid hook call"——生产构建不检查所以线上正常，dev 模式必崩）
+  const handleResize = useDebouncedCallback(() => {
+    setSize({ width: window.innerWidth, height: window.innerHeight })
+  }, delay)
+
   useEffect(() => {
-    const handleResize = useDebouncedCallback(() => {
-      setSize({ width: window.innerWidth, height: window.innerHeight })
-    }, delay)
     window.addEventListener('resize', handleResize)
     return () => {
       window.removeEventListener('resize', handleResize)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [delay])
+  }, [delay, handleResize])
 
   return size
 }
