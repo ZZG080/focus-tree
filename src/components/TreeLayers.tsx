@@ -181,7 +181,7 @@ export const TreeLayers = memo(function TreeLayers({
 
   // 几何计算缓存：仅依赖生长状态
   const params = useMemo(() => computeTreeParams(effGrowth), [effGrowth])
-  const { trunkH, trunkW, trunkTopY, crownY, crownR, leafCount, branchT, fruitT } = params
+  const { trunkH, trunkW, trunkTopY, crownR, leafCount, branchT, fruitT } = params
 
   // 遮挡虚化 + 老树记忆褪色（远处树降饱和，模拟大气透视/记忆褪色）
   const blurAmount = layerOrder > 0 ? Math.min(layerOrder * 0.9, 4.5) : 0
@@ -195,6 +195,10 @@ export const TreeLayers = memo(function TreeLayers({
   // 枯树：树干灰化，叶量缩减
   const trunkColor = wither ? '#7a7268' : species.trunkColor
   const effCrownR = wither ? crownR * 0.55 : crownR
+  // 树冠中心 Y：基于「实际渲染半径」计算，系数 0.3 让树冠底部深入树干顶部 0.52r
+  // 保证树冠始终扎实地"坐在"树干上（完整态重叠 ≈61px，wither 缩冠后 ≈33px，早期小冠 ≈16px），
+  // 杜绝"树干树冠分离"的视觉缝隙（此前用完整 crownR×0.4 计算，wither 时重叠仅 ~6px）
+  const crownY = trunkTopY - effCrownR * 0.3
 
   const showSeed = (!seedLanded || effGrowth.totalProgress < 0.05) && !staticTree
   const showTrunk = trunkH > 3
