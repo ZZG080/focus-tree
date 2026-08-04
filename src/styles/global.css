@@ -2069,3 +2069,271 @@ body.high-contrast .growth-option.active {
 @media (max-width: 1079px) {
   .tree-crown-sway { animation: none !important; }
 }
+
+/* ============================================================
+   用户指导手册（HelpView）+ 启动页速览（SplashScreen）样式
+   ============================================================ */
+
+/* ---- 手册页布局 ---- */
+.help-view {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+.help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.help-header h1 {
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  color: #f8fafc;
+}
+
+/* 目录（横向可滚动 chips） */
+.help-toc {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 2px 14px;
+  margin-bottom: 8px;
+  scrollbar-width: thin;
+}
+.help-toc-item {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+.help-toc-item:hover {
+  color: #f8fafc;
+  border-color: rgba(74, 222, 128, 0.4);
+}
+.help-toc-item.active {
+  color: #0f172a;
+  background: linear-gradient(135deg, #4ade80, #34d399);
+  border-color: transparent;
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.35);
+}
+
+/* 章节卡片 */
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.help-section {
+  border-radius: 16px;
+  padding: 22px 24px;
+  scroll-margin-top: 16px;
+  animation: fadeUp 0.4s ease-out;
+}
+.help-section h2 {
+  font-size: 1.15rem;
+  color: #f8fafc;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.help-section p {
+  color: #94a3b8;
+  line-height: 1.8;
+  margin-bottom: 10px;
+}
+.help-section strong {
+  color: #f8fafc;
+}
+.help-section b {
+  color: #e2e8f0;
+}
+
+/* 步骤列表 */
+.help-steps {
+  margin: 6px 0 10px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.help-steps li {
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+.help-steps li b {
+  color: #4ade80;
+}
+
+/* 通用列表 */
+.help-list {
+  margin: 6px 0 10px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.help-list li {
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+.help-list li b {
+  color: #4ade80;
+}
+
+/* 特性网格 */
+.help-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.help-feature {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.help-feature > span {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.help-feature b {
+  font-size: 13px;
+  color: #f8fafc;
+}
+.help-feature p {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 2px 0 0;
+  line-height: 1.5;
+}
+
+/* 表格 */
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 12px;
+  font-size: 13px;
+}
+.help-table th {
+  text-align: left;
+  color: #4ade80;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(74, 222, 128, 0.25);
+  background: rgba(30, 41, 59, 0.4);
+}
+.help-table td {
+  color: #cbd5e1;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  line-height: 1.6;
+}
+.help-table tr:hover td {
+  background: rgba(74, 222, 128, 0.04);
+}
+
+/* 提示行 */
+.help-note {
+  font-size: 13px;
+  color: #fde68a !important;
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.18);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+/* FAQ 折叠 */
+.help-faq {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.4);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.help-faq summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+  position: relative;
+  transition: color 0.2s;
+}
+.help-faq summary::after {
+  content: '▾';
+  position: absolute;
+  right: 16px;
+  color: #4ade80;
+  transition: transform 0.25s ease;
+}
+.help-faq[open] summary::after {
+  transform: rotate(180deg);
+}
+.help-faq summary:hover {
+  color: #4ade80;
+}
+.help-faq p {
+  padding: 0 16px 14px;
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.7;
+}
+
+/* 底部 CTA */
+.help-footer {
+  text-align: center;
+  margin-top: 24px;
+}
+
+/* ---- 启动页简化速览 ---- */
+.splash-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px auto 0;
+  max-width: 320px;
+}
+.splash-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: splashTipIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes splashTipIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.splash-tip-icon {
+  font-size: 16px;
+}
+.splash-tip-text {
+  font-size: 12.5px;
+  color: #cbd5e1;
+}
+
+/* 手册页移动端适配 */
+@media (max-width: 600px) {
+  .help-view { padding: 16px 12px 96px; }
+  .help-section { padding: 18px 16px; }
+  .help-features { grid-template-columns: 1fr 1fr; }
+  .help-toc-item { font-size: 12px; padding: 6px 12px; }
+}
