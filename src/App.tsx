@@ -7,17 +7,19 @@ import { FocusView } from './components/FocusView'
 import { HistoryView } from './components/HistoryView'
 import { ReportView } from './components/ReportView'
 import { SceneStudio } from './components/SceneStudioView'
+import { HelpView } from './components/HelpView'
 import { SplashScreen } from './components/SplashScreen'
 import { Onboarding } from './components/Onboarding'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
-type View = 'setup' | 'focus' | 'history' | 'report' | 'scene'
+type View = 'setup' | 'focus' | 'history' | 'report' | 'scene' | 'help'
 
 const NAV_ITEMS: Array<{ view: View; icon: string; label: string }> = [
   { view: 'setup', icon: '🌱', label: '专注' },
   { view: 'history', icon: '📖', label: '森林' },
   { view: 'report', icon: '📈', label: '周报' },
   { view: 'scene', icon: '🎨', label: '场景' },
+  { view: 'help', icon: '📘', label: '手册' },
 ]
 
 export default function App() {
@@ -110,6 +112,7 @@ export default function App() {
                   {view === 'scene' && (
                     <SceneStudio onBack={() => setView('setup')} onApplied={() => setView('setup')} />
                   )}
+                  {view === 'help' && <HelpView onBack={() => setView('setup')} />}
                 </div>
               </div>
             )}
