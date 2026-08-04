@@ -9,6 +9,7 @@ import { ReportView } from './components/ReportView'
 import { SceneStudio } from './components/SceneStudioView'
 import { SplashScreen } from './components/SplashScreen'
 import { Onboarding } from './components/Onboarding'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 type View = 'setup' | 'focus' | 'history' | 'report' | 'scene'
 
@@ -48,7 +49,23 @@ export default function App() {
           {/* 主内容区 */}
           <main className={`main-content ${immersive ? 'main-immersive' : ''}`}>
             {immersive ? (
-              <FocusView initialMinutes={focusMinutes} onExit={() => setView('setup')} />
+              <ErrorBoundary
+                fallback={
+                  <div className="result-view">
+                    <div className="result-card">
+                      <h2>😵 场景出错了</h2>
+                      <p className="result-msg" role="alert">
+                        树场景渲染遇到问题，但你的专注数据没有丢失。可安全退出后重试。
+                      </p>
+                      <div className="result-actions">
+                        <button className="start-btn" onClick={() => setView('setup')}>🌱 返回设置</button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              >
+                <FocusView initialMinutes={focusMinutes} onExit={() => setView('setup')} />
+              </ErrorBoundary>
             ) : (
               <div className="layout">
                 {/* 桌面侧边栏（移动端自动隐藏） */}
