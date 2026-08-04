@@ -99,7 +99,7 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
     const ctrlY = startY + Math.cos(rad) * len * r.len * 0.45 + 3
     // 提亮颜色：深棕 #5d3a1e（比泥土深很多，清晰可见）
     parts.push(
-      `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="#5d3a1e" stroke-width="3.5" stroke-linecap="round" opacity="0.9" />`
+      `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="#5d3a1e" stroke-width="3.5" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" opacity="0.9" />`
     )
     // 侧根须：中段分叉
     if (t > 0.4 && r.spread > 0.6) {
@@ -108,7 +108,7 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
       const sEndX = sideX + Math.sin(rad + 0.6) * 20
       const sEndY = sideY + Math.cos(rad + 0.6) * 16 + 6
       parts.push(
-        `<path d="M ${sideX} ${sideY} Q ${sideX + 5} ${sideY + 8} ${sEndX} ${sEndY}" fill="none" stroke="#7a4f2a" stroke-width="2.2" stroke-linecap="round" opacity="0.8" />`
+        `<path d="M ${sideX} ${sideY} Q ${sideX + 5} ${sideY + 8} ${sEndX} ${sEndY}" fill="none" stroke="#7a4f2a" stroke-width="2.2" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" opacity="0.8" />`
       )
     }
   }
@@ -122,7 +122,7 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
     const endX = startX + Math.sin(rad) * len * 0.55
     const endY = startY + Math.cos(rad) * len * 0.5 + 2
     parts.push(
-      `<path d="M ${startX} ${startY} Q ${startX + Math.sin(rad) * 10} ${startY + len * 0.25} ${endX} ${endY}" fill="none" stroke="#9a6a3a" stroke-width="1.8" stroke-linecap="round" opacity="0.65" />`
+      `<path d="M ${startX} ${startY} Q ${startX + Math.sin(rad) * 10} ${startY + len * 0.25} ${endX} ${endY}" fill="none" stroke="#9a6a3a" stroke-width="1.8" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" opacity="0.65" />`
     )
   }
   return parts.join('')
@@ -162,7 +162,7 @@ export function buildTrunk(cx: number, bottomY: number, topY: number, w: number,
     const endY = bottomY + r.dy + (i % 2) * 3
     const ctrlX = cx + r.dir * w * r.len * 0.55
     const ctrlY = bottomY - 2 + r.bend * 6
-    return `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="${trunkColor}" stroke-width="${i < 2 ? rootW : rootW * 0.75}" stroke-linecap="round" />`
+    return `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="${trunkColor}" stroke-width="${i < 2 ? rootW : rootW * 0.75}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
   })
   return [
     `<path d="${body}" fill="${trunkColor}" stroke="${dark}" stroke-width="1.2" />`,
@@ -186,19 +186,19 @@ export function buildBranches(cx: number, topY: number, h: number, w: number, t:
   const leftEndX = cx - branchLen
   const leftEndY = leftY - 14 - t * 12
   parts.push(
-    `<path d="M ${cx - w * 0.2} ${leftY} Q ${cx - branchLen * 0.5} ${leftY - 4} ${leftEndX} ${leftEndY}" fill="none" stroke="#8a5a34" stroke-width="${branchW}" stroke-linecap="round" />`
+    `<path d="M ${cx - w * 0.2} ${leftY} Q ${cx - branchLen * 0.5} ${leftY - 4} ${leftEndX} ${leftEndY}" fill="none" stroke="#8a5a34" stroke-width="${branchW}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
   )
   // 右枝
   const rightY = topY + h * 0.32
   const rightEndX = cx + branchLen * 1.05
   const rightEndY = rightY - 10 - t * 10
   parts.push(
-    `<path d="M ${cx + w * 0.2} ${rightY} Q ${cx + branchLen * 0.5} ${rightY - 6} ${rightEndX} ${rightEndY}" fill="none" stroke="#8a5a34" stroke-width="${branchW * 0.9}" stroke-linecap="round" />`
+    `<path d="M ${cx + w * 0.2} ${rightY} Q ${cx + branchLen * 0.5} ${rightY - 6} ${rightEndX} ${rightEndY}" fill="none" stroke="#8a5a34" stroke-width="${branchW * 0.9}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
   )
   // 顶端小枝
   if (t > 0.4) {
     parts.push(
-      `<path d="M ${cx} ${topY + 4} Q ${cx + 6} ${topY - 6} ${cx + 12} ${topY - 10}" fill="none" stroke="#8a5a34" stroke-width="${branchW * 0.7}" stroke-linecap="round" />`
+      `<path d="M ${cx} ${topY + 4} Q ${cx + 6} ${topY - 6} ${cx + 12} ${topY - 10}" fill="none" stroke="#8a5a34" stroke-width="${branchW * 0.7}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
     )
   }
   return parts.join('')
