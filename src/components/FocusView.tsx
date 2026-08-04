@@ -1,4 +1,4 @@
-// 专注视图 V6：天气（含真实联动）+ 多种子 + 积雪消融 + 季节 + 枯树惩罚 + 场景
+// 专注视图 V7：rAF 帧同步驱动 + 快照恢复 + 积雪消融 + 季节 + 枯树 + 场景
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FocusRecord, GrowthState, PlantedTree, Season, Weather } from '../types'
 import {
@@ -8,18 +8,16 @@ import {
 } from '../services/growthCurve'
 import {
   addRecord,
-  clearSnapshot,
   getRecords,
   getSettings,
-  getSnapshot,
   persistUnlockedSpecies,
   saveSettings,
-  saveSnapshot,
 } from '../services/storageService'
 import { generateEncouragement } from '../services/aiService'
 import { computeUnlockedSpecies } from '../services/treeSpecies'
 import { getCurrentSeason } from '../services/seasonService'
 import { getScene } from '../services/sceneService'
+import { useFocusTimer } from '../hooks/useFocusTimer'
 import { TreeLayers, TreeRoots } from './TreeLayers'
 import { Sky } from './Sky'
 import { Ground } from './Ground'
@@ -59,11 +57,9 @@ function makeSeedPositions(count: number, avoidRange: Array<{ min: number; max: 
 }
 
 export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
-  // 会话锚点
-  const anchorRef = useRef<{ startedAt: number; pausedMs: number } | null>(null)
-  const [plannedMs] = useState(() => initialMinutes * 60_000)
-  const [elapsedMs, setElapsedMs] = useState(0)
-  const [paused, setPaused] = useState(false)
+  const plannedMs = initialMinutes * 60_000
+  const timer = useFocusTimer()
+  const { elapsedMs, paused, finished } = timer
 
   // 设置：天气 + 种子数 + 生长周期 + 树种（会话开始时锁定）
   const [weather, setWeather] = useState<Weather>(() => getSettings().weather)
@@ -78,10 +74,11 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   // 场景（配色/粒子）
   const [sceneId] = useState(() => getSettings().sceneId)
   const scene = useMemo(() => getScene(sceneId), [sceneId])
+  // 手绘滤镜：桌面端启用（feTurbulence 耗 GPU，移动端关闭保性能）
+  const [handDrawn] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1080px)').matches)
   // 枯树惩罚：最近连续 N 次提前结束 → 本次的树枯萎
   const [wither] = useState(() => {
     const records = getRecords()
-    // 连续 2 次提前结束触发（最近 3 条记录中）
     const recent = records.slice(0, 3)
     const recentFail = recent.filter((r) => !r.completed).length
     return recent.length >= 2 && recentFail >= 2
@@ -100,7 +97,6 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   const [showIntro, setShowIntro] = useState(true)
 
   // 会话结束
-  const [finished, setFinished] = useState(false)
   const [finishedRecord, setFinishedRecord] = useState<FocusRecord | null>(null)
   const [encouragement, setEncouragement] = useState('')
 
@@ -118,6 +114,7 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   const [snowLevel, setSnowLevel] = useState(0)
   const snowAccumRef = useRef(0)
   const lastTickRef = useRef(0)
+  const lastSaveRef = useRef(0)
 
   // 启动动画：种子落下 → 镜头聚焦 → 拉远
   useEffect(() => {
@@ -134,97 +131,83 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   useEffect(() => {
     if (restoredRef.current) return
     restoredRef.current = true
-    const snapshot = getSnapshot()
+    const settings = getSettings()
+    const snapshot = timer.restore()
     if (snapshot) {
-      anchorRef.current = { startedAt: snapshot.startedAt, pausedMs: snapshot.pausedMs }
-      setPaused(snapshot.paused)
-      setWeather(snapshot.weather ?? getSettings().weather)
+      setWeather(snapshot.weather ?? settings.weather)
       setSeedCount(snapshot.seedCount ?? 1)
-      setGrowthMinutes(snapshot.growthMinutes ?? getSettings().growthMinutes)
+      setGrowthMinutes(snapshot.growthMinutes ?? settings.growthMinutes)
       setPlantedTrees(snapshot.plantedTrees ?? [])
       setSeedXs(snapshot.seedXs?.length ? snapshot.seedXs : makeSeedPositions(snapshot.seedCount ?? 1))
-      const el = Math.max(0, Date.now() - snapshot.startedAt - snapshot.pausedMs)
-      setElapsedMs(el)
-      if (el < plannedMs) {
-        setSeedLanded(true)
-        setShowIntro(false)
-      }
-    } else {
-      const s = getSettings()
-      setWeather(s.weather)
-      setSeedCount(s.seedCount)
-      setGrowthMinutes(s.growthMinutes)
-      // 初始化种子落点（避开历史树位置——但新会话无历史树，直接生成）
-      setSeedXs(makeSeedPositions(s.seedCount))
-      anchorRef.current = { startedAt: Date.now(), pausedMs: 0 }
-      saveSnapshot({
-        plannedMinutes: initialMinutes,
-        startedAt: anchorRef.current.startedAt,
-        pausedMs: 0,
-        paused: false,
-        weather: s.weather,
-        seedCount: s.seedCount,
-        growthMinutes: s.growthMinutes,
-        seedXs: makeSeedPositions(s.seedCount),
-        plantedTrees: [],
-      })
+      setSeedLanded(true)
+      setShowIntro(false)
+      return
     }
+    // 新会话
+    setWeather(settings.weather)
+    setSeedCount(settings.seedCount)
+    setGrowthMinutes(settings.growthMinutes)
+    const xs = makeSeedPositions(settings.seedCount)
+    setSeedXs(xs)
+    timer.begin(plannedMs)
+    // 立即保存完整快照（覆盖 begin 的占位）
+    timer.persist({
+      plannedMinutes: plannedMs / 60_000,
+      weather: settings.weather,
+      seedCount: settings.seedCount,
+      growthMinutes: settings.growthMinutes,
+      seedXs: xs,
+      plantedTrees: [],
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 主计时循环
+  // 帧同步循环副作用：积雪动态 + 快照节流（依赖 elapsedMs 每帧变化触发）
   useEffect(() => {
-    if (paused || finished) return
-    const timer = setInterval(() => {
-      const anchor = anchorRef.current
-      if (!anchor) return
-      const now = Date.now()
-      const el = now - anchor.startedAt - anchor.pausedMs
-      setElapsedMs(el)
+    if (finished) return
+    const now = Date.now()
+    // 积雪动态：雪天累积，其他天气缓慢消融（真实时间流逝）
+    const deltaMs = lastTickRef.current ? now - lastTickRef.current : 500
+    lastTickRef.current = now
+    if (weather === 'snowy') {
+      // 约 2/3 个生长周期积满（演示模式也快）
+      const fullAccumMs = growthMinutes * 60_000 * (2 / 3)
+      const target = Math.min(1, elapsedMs / fullAccumMs)
+      snowAccumRef.current = Math.min(1, snowAccumRef.current + (target - snowAccumRef.current) * 0.03 + (deltaMs / fullAccumMs) * 0.5)
+      if (snowAccumRef.current < target) snowAccumRef.current = target
+    } else if (snowAccumRef.current > 0) {
+      // 消融：约 1 个生长周期化完
+      const meltMs = growthMinutes * 60_000
+      snowAccumRef.current = Math.max(0, snowAccumRef.current - deltaMs / meltMs)
+    }
+    setSnowLevel(snowAccumRef.current)
 
-      // 积雪动态：雪天累积，其他天气缓慢消融（真实时间流逝）
-      const deltaMs = lastTickRef.current ? now - lastTickRef.current : 500
-      lastTickRef.current = now
-      if (weather === 'snowy') {
-        // 约 2/3 个生长周期积满（演示模式也快）
-        const fullAccumMs = growthMinutes * 60_000 * (2 / 3)
-        const target = Math.min(1, el / fullAccumMs)
-        snowAccumRef.current = Math.min(1, snowAccumRef.current + (target - snowAccumRef.current) * 0.03 + deltaMs / fullAccumMs * 0.5)
-        // 确保至少向 target 收敛
-        if (snowAccumRef.current < target) snowAccumRef.current = target
-      } else if (snowAccumRef.current > 0) {
-        // 消融：约 1 个生长周期化完
-        const meltMs = growthMinutes * 60_000
-        snowAccumRef.current = Math.max(0, snowAccumRef.current - deltaMs / meltMs)
-      }
-      setSnowLevel(snowAccumRef.current)
+    // 持久化快照（节流：每 5s 一次）
+    if (now - lastSaveRef.current > 5000) {
+      lastSaveRef.current = now
+      timer.persist({
+        plannedMinutes: plannedMs / 60_000,
+        weather,
+        seedCount,
+        growthMinutes,
+        seedXs,
+        plantedTrees,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elapsedMs, finished])
 
-      // 持久化快照（节流）
-      if (el % 5000 < 500) {
-        saveSnapshot({
-          plannedMinutes: initialMinutes,
-          startedAt: anchor.startedAt,
-          pausedMs: anchor.pausedMs,
-          paused,
-          weather,
-          seedCount,
-          growthMinutes,
-          seedXs,
-          plantedTrees,
-        })
-      }
-    }, 500)
-    return () => clearInterval(timer)
-  }, [paused, finished, initialMinutes, weather, seedCount, seedXs, plantedTrees, growthMinutes])
-
-  // 大树长成 → 记录历史树 + 落新种子（保持用户选择的种子数）
+  // 大树长成 → 记录历史树（含出生天气遗产 + 稀有变异） + 落新种子
   useEffect(() => {
     if (!treeMatureNow || finished) return
-    // 把当前批次树加入历史（在中间位置，后续批次叠加）
+    // 把当前批次树加入历史（记录出生天气：雨天树带露珠、雪天树带积雪）
     const batchTrees: PlantedTree[] = seedXs.map((x, i) => ({
       x,
       index: batchRef.current * seedCount + i,
       plantedAt: Date.now(),
+      birthWeather: weather,
+      // 1% 概率变异为金色树（稀有收藏）
+      variant: Math.random() < 0.01 ? 'golden' : undefined,
     }))
     setPlantedTrees((prev) => {
       // 合并：新批次在后
@@ -244,10 +227,8 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   // 会话结束
   const endSession = async (completed: boolean) => {
     if (finished) return
-    const anchor = anchorRef.current
-    const actualMs = anchor ? Date.now() - anchor.startedAt - anchor.pausedMs : elapsedMs
-    setFinished(true)
-    clearSnapshot()
+    const actualMs = timer.getActualMs()
+    timer.finish()
     // 当前批次树也计入本次专注的树数
     const treesThisSession = batchRef.current * seedCount + seedXs.length
     const record: FocusRecord = {
@@ -255,7 +236,7 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
       plannedMinutes: plannedMs / 60_000,
       actualMinutes: Math.round((actualMs / 60_000) * 10) / 10,
       completed,
-      startedAt: anchor?.startedAt ?? Date.now(),
+      startedAt: Date.now() - actualMs,
       endedAt: Date.now(),
       weather,
       treeCount: treesThisSession,
@@ -280,7 +261,6 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   // 切换天气（立即生效，仅当前会话）
   const switchWeather = (w: Weather) => {
     setWeather(w)
-    // 持久化为默认天气
     saveSettings({ weather: w })
   }
 
@@ -294,7 +274,7 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
             本次专注 <strong>{finishedRecord.actualMinutes}</strong> 分钟 · 种下{' '}
             <strong>{finishedRecord.treeCount ?? seedCount}</strong> 棵树
           </p>
-          <p className="result-msg">{encouragement}</p>
+          <p className="result-msg" role="status" aria-live="polite">{encouragement}</p>
           <div className="result-actions">
             <button className="start-btn" onClick={onExit}>🌱 返回，再看一棵</button>
           </div>
@@ -309,7 +289,8 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   return (
     <div className="focus-view">
       <div className="scene">
-        <Sky weather={weather} scene={scene} />
+        {/* 太阳位置 = 专注进度（0 开始 → 1 结束，东升西落） */}
+        <Sky weather={weather} scene={scene} mature={treeMatureNow} sunProgress={Math.min(1, elapsedMs / plannedMs)} />
         {/* 根系层（泥土之下）：所有树的根扎进土里 */}
         <svg className="tree-roots-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-hidden>
           {plantedTrees.map((t, i) => {
@@ -333,9 +314,16 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
             />
           ))}
         </svg>
-        <Ground snowLevel={snowLevel} isSnowy={weather === 'snowy'} scene={scene} />
+        <Ground snowLevel={snowLevel} isSnowy={weather === 'snowy'} isRainy={weather === 'rainy'} scene={scene} mature={treeMatureNow} />
         {/* 地上层（泥土之上）：种子/树干/树枝/树冠 */}
         <svg className="tree-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-hidden>
+          {/* 手绘噪点滤镜：给树形添加铅笔质感（feTurbulence 轻扭曲） */}
+          <defs>
+            <filter id="roughness" x="-10%" y="-10%" width="120%" height="120%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="2" seed="7" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
           {/* 遮挡顺序：先种的树在最前（layerOrder 小），后种的在后（layerOrder 大→虚化） */}
           {plantedTrees.map((t, i) => {
             const backOrder = plantedTrees.length - 1 - i
@@ -350,10 +338,14 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
                 layerOrder={backOrder}
                 speciesId={speciesId}
                 season={season}
+                birthWeather={t.birthWeather}
+                variant={t.variant}
+                handDrawn={handDrawn}
+                shadowDir={Math.round(Math.min(1, elapsedMs / plannedMs) * 10) / 10}
               />
             )
           })}
-          {/* 当前批次（多种子同步生长；连续放弃时枯萎） */}
+          {/* 当前批次（多种子同步生长；连续放弃时枯萎；暂停时柔光+震颤） */}
           {seedXs.map((x, i) => (
             <TreeLayers
               key={`cur-${x}-${i}`}
@@ -365,34 +357,38 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
               speciesId={speciesId}
               season={season}
               wither={wither}
+              paused={paused}
             />
           ))}
         </svg>
         {/* 枯树提示 */}
         {wither && !finished && (
-          <div className="wither-toast">🌫️ 连续提前结束，这棵树枯萎了…完成一次专注让它恢复生机</div>
+          <div className="wither-toast" role="status" aria-live="polite">🌫️ 连续提前结束，这棵树枯萎了…完成一次专注让它恢复生机</div>
         )}
         {/* 顶部计时条 */}
         <div className="timer-bar">
-          <div className="timer-text">{formatTime(remainingMs)}</div>
-          <div className="progress-track">
+          <time className="timer-text" dateTime={`PT${Math.max(0, Math.floor(remainingMs / 1000))}S`}>
+            {formatTime(remainingMs)}
+          </time>
+          <div className="progress-track" role="progressbar" aria-valuenow={Math.round((elapsedMs / plannedMs) * 100)} aria-valuemin={0} aria-valuemax={100}>
             <div
               className="progress-fill"
               style={{ width: `${Math.min(100, (elapsedMs / plannedMs) * 100)}%` }}
             />
           </div>
-          <div className="timer-sub">
+          <div className="timer-sub" aria-live="polite">
             第 {batchRef.current + 1} 批 · {formatTime(elapsedMs)} ·{' '}
             {weather === 'rainy' ? '🌧️ 雨水滋润生长' : weather === 'snowy' ? '❄️ 雪花飘落' : '☀️ 阳光正好'}
           </div>
         </div>
         {/* 天气切换 */}
-        <div className="weather-switcher">
+        <div className="weather-switcher" role="group" aria-label="切换天气">
           {(['sunny', 'rainy', 'snowy'] as Weather[]).map((w) => (
             <button
               key={w}
               className={`weather-btn ${weather === w ? 'active' : ''}`}
               onClick={() => switchWeather(w)}
+              aria-label={w === 'sunny' ? '切换到晴天' : w === 'rainy' ? '切换到雨天' : '切换到雪天'}
               title={w === 'sunny' ? '晴天' : w === 'rainy' ? '雨天（生长加速）' : '雪天（积雪）'}
             >
               {w === 'sunny' ? '☀️' : w === 'rainy' ? '🌧️' : '❄️'}
@@ -402,22 +398,22 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
         {/* 控制按钮 */}
         <div className="controls">
           {!paused ? (
-            <button className="ghost-btn" onClick={() => setPaused(true)}>⏸ 暂停</button>
+            <button className="ghost-btn" onClick={timer.togglePause} aria-label="暂停专注">⏸ 暂停</button>
           ) : (
-            <button className="ghost-btn" onClick={() => setPaused(false)}>▶ 继续</button>
+            <button className="ghost-btn" onClick={timer.togglePause} aria-label="继续专注">▶ 继续</button>
           )}
-          <button className="ghost-btn danger" onClick={() => endSession(false)}>⏹ 结束</button>
+          <button className="ghost-btn danger" onClick={() => endSession(false)} aria-label="结束专注">⏹ 结束</button>
         </div>
       </div>
 
       {focusing && <div className="focus-flash" />}
       {showIntro && !seedLanded && (
-        <div className="intro-overlay">
+        <div className="intro-overlay" role="status" aria-live="polite">
           <p>{seedCount > 1 ? `${seedCount} 粒种子正从天而降…` : '一粒种子正从天而降…'}</p>
         </div>
       )}
       {showMatureToast && (
-        <div className="mature-toast">🌳 大树长成！新种子即将落下…</div>
+        <div className="mature-toast" role="status" aria-live="polite">🌳 大树长成！新种子即将落下…</div>
       )}
     </div>
   )
