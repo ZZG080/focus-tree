@@ -1155,10 +1155,25 @@ button {
   font-weight: 600;
 }
 
-/* 主视图留出底部导航空间 */
+/* 移动端主视图留出底部导航空间 */
 .main-view {
   height: 100%;
   padding-bottom: 64px;
+}
+
+/* 桌面壳主内容区（移动端兜底） */
+.main-content {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.app-immersive {
+  height: 100%;
+}
+
+.main-immersive {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ============ 周报视图 ============ */
@@ -1504,6 +1519,279 @@ button {
   padding: 6px 14px;
 }
 
+/* ============ 桌面应用壳（侧边栏布局） ============ */
+/* 移动端：普通全屏 */
+.app {
+  height: 100%;
+}
+
+.app-shell {
+  display: block;
+}
+
+/* 桌面端（>1024px）：侧边栏 + 内容区 */
+@media (min-width: 1024px) {
+  .app-shell {
+    display: flex;
+    height: 100%;
+  }
+
+  /* 桌面设置页：双栏布局（左配置 + 右预览） */
+  .main-content .setup-view {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 36px 40px;
+  }
+
+  .main-content .setup-card {
+    max-width: 860px;
+    width: 100%;
+    margin: 0;
+    text-align: left;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 28px;
+    align-items: start;
+    padding: 32px 36px;
+  }
+
+  .main-content .setup-card .setup-title,
+  .main-content .setup-card .setup-subtitle {
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+
+  /* 预览卡（桌面右侧栏） */
+  .setup-preview {
+    grid-column: 2;
+    grid-row: 2 / span 6;
+    position: sticky;
+    top: 8px;
+    background: linear-gradient(180deg, #f2f8f2, #e8f2e8);
+    border: 1.5px solid #d8e8d8;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(46, 78, 42, 0.1);
+  }
+
+  .preview-scene {
+    position: relative;
+    height: 240px;
+    overflow: hidden;
+  }
+
+  .preview-sky {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #7ec8f2, #d8f0fb);
+    text-align: right;
+    padding: 12px 16px;
+    font-size: 22px;
+  }
+
+  .preview-sun {
+    margin-left: 8px;
+  }
+
+  .preview-tree {
+    position: absolute;
+    bottom: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 84px;
+    filter: drop-shadow(0 8px 16px rgba(46, 78, 42, 0.25));
+    animation: previewFloat 3s ease-in-out infinite;
+  }
+
+  .preview-ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .preview-grass {
+    height: 17px;
+    background: linear-gradient(180deg, #7cc76b, #5da34e);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  }
+
+  .preview-dirt {
+    flex: 1;
+    background: linear-gradient(180deg, #a9713d, #8f5f2e);
+  }
+
+  .preview-info {
+    padding: 16px;
+    text-align: center;
+  }
+
+  .preview-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 6px;
+  }
+
+  .preview-meta {
+    font-size: 12px;
+    color: var(--text-sub);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .preview-info .start-btn {
+    margin-bottom: 0;
+  }
+
+  @keyframes previewFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-6px); }
+  }
+
+  /* 隐藏原有底部开始按钮（预览卡已含） */
+  .main-content .setup-card > .start-btn {
+    display: none;
+  }
+
+  /* 侧边栏 */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(248, 252, 248, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(216, 232, 216, 0.9);
+    padding: 20px 14px;
+    gap: 8px;
+    z-index: 40;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 18px;
+    border-bottom: 1px solid rgba(216, 232, 216, 0.8);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-logo {
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .sidebar-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: 0.3px;
+  }
+
+  .sidebar-sub {
+    font-size: 11px;
+    color: var(--text-sub);
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-sub);
+    transition: all 0.15s;
+    width: 100%;
+    text-align: left;
+  }
+
+  .sidebar-item:hover {
+    background: rgba(232, 242, 232, 0.9);
+    color: var(--text-main);
+  }
+
+  .sidebar-item.active {
+    background: linear-gradient(135deg, #5cb85c 0%, #3e8e41 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(62, 142, 65, 0.3);
+  }
+
+  .sidebar-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid rgba(216, 232, 216, 0.8);
+    padding-top: 10px;
+  }
+
+  /* 主内容区 */
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .main-content .setup-view {
+    height: auto;
+    min-height: 100%;
+    padding: 32px;
+  }
+
+  .main-content .setup-card {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  /* 沉浸模式（专注）：全屏无侧边栏 */
+  .app-immersive {
+    display: block;
+    height: 100%;
+  }
+
+  .main-immersive {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* 桌面端隐藏底部导航 */
+  .bottom-nav {
+    display: none;
+  }
+
+  .main-view {
+    padding-bottom: 0;
+  }
+}
+
+/* 移动/平板：隐藏侧边栏与预览卡 */
+@media (max-width: 1023px) {
+  .sidebar {
+    display: none;
+  }
+  .setup-preview {
+    display: none;
+  }
+}
+
 /* ============ 动效 ============ */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -1580,21 +1868,6 @@ button {
 
   /* 图鉴网格：更多列 */
   .collection-grid { grid-template-columns: repeat(5, 1fr); }
-
-  /* 底部导航：居中悬浮胶囊（桌面优雅形态） */
-  .bottom-nav {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    bottom: 24px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 12px 40px rgba(46, 78, 42, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    padding: 6px 10px;
-    width: auto;
-  }
-  .nav-item { padding: 10px 22px; }
-  .main-view { padding-bottom: 96px; }
 
   /* 记录列表两列布局（桌面） */
   .record-list {
