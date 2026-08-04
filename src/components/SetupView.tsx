@@ -81,6 +81,35 @@ export function SetupView({ onStart, onShowHistory }: SetupViewProps) {
         <h1 className="setup-title">🌱 Focus Tree</h1>
         <p className="setup-subtitle">每一次专注，种下一片森林</p>
 
+        {/* 桌面预览卡（>1024px 显示，移动端隐藏） */}
+        <div className="setup-preview">
+          <div className="preview-scene">
+            <div className="preview-sky">
+              <span className="preview-sun">{weather === 'sunny' ? '☀️' : weather === 'rainy' ? '🌧️' : '❄️'}</span>
+              <span className="preview-cloud">☁️</span>
+            </div>
+            <div className="preview-tree">
+              {TREE_SPECIES.find((s) => s.id === speciesId)?.emoji ?? '🌳'}
+            </div>
+            <div className="preview-ground">
+              <span className="preview-grass" />
+              <span className="preview-dirt" />
+            </div>
+          </div>
+          <div className="preview-info">
+            <div className="preview-name">
+              {TREE_SPECIES.find((s) => s.id === speciesId)?.name ?? '橡树'}
+            </div>
+            <div className="preview-meta">
+              {weather === 'sunny' ? '☀️ 晴天' : weather === 'rainy' ? '🌧️ 雨天 · 加速15%' : '❄️ 雪天 · 积雪'}
+              {' · '}{seedCount} 颗种子 · {GROWTH_LABELS[growthMinutes]}
+            </div>
+            <button className="start-btn" onClick={handleStart}>
+              🌱 开始专注
+            </button>
+          </div>
+        </div>
+
         {/* 树种选择（图鉴收集） */}
         <div className="species-picker">
           <div className="picker-label">选择树种</div>
