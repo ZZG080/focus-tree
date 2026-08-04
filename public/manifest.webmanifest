@@ -1,0 +1,17 @@
+{
+  "name": "FocusTree 专注森林",
+  "short_name": "FocusTree",
+  "description": "把每次专注时间可视化为一棵树——静谧夜林·发光手绘风格",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
