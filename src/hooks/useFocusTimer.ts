@@ -37,14 +37,21 @@ export function useFocusTimer(): FocusTimer {
   const anchorRef = useRef<{ startedAt: number; pausedMs: number } | null>(null)
   const pausedAtRef = useRef<number | null>(null)
 
-  // rAF 帧同步循环：每帧计算精确 elapsed
+  // rAF 帧同步循环：每帧计算精确 elapsed，但仅当变化超过阈值才触发状态更新
+  // （渲染节流：进度变化 < 阈值时跳过 setState，避免每帧重渲染）
+  const lastElapsedRef = useRef(0)
   useEffect(() => {
     if (finished) return
     let rafId = 0
     const tick = () => {
       const anchor = anchorRef.current
       if (anchor && !paused) {
-        setElapsedMs(Date.now() - anchor.startedAt - anchor.pausedMs)
+        const el = Date.now() - anchor.startedAt - anchor.pausedMs
+        // 节流阈值：100ms（视觉无感，但显著减少 rAF 驱动的重渲染）
+        if (Math.abs(el - lastElapsedRef.current) >= 100) {
+          lastElapsedRef.current = el
+          setElapsedMs(el)
+        }
       }
       rafId = requestAnimationFrame(tick)
     }
@@ -110,6 +117,7 @@ export function useFocusTimer(): FocusTimer {
       growthMinutes: 90,
       seedXs: [],
       plantedTrees: [],
+      challengeMode: false,
     })
   }, [])
 
@@ -127,6 +135,7 @@ export function useFocusTimer(): FocusTimer {
       growthMinutes: extra.growthMinutes ?? 90,
       seedXs: extra.seedXs ?? [],
       plantedTrees: extra.plantedTrees ?? [],
+      challengeMode: extra.challengeMode ?? false,
     })
   }, [paused])
 
