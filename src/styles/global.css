@@ -11,6 +11,23 @@
   --leaf-dark: #3e8e41;
   --trunk: #8a5a34;
 
+  /* 生长状态色（设计语言统一） */
+  --growth-seed: #8a5a34;      /* 种子褐 */
+  --growth-sprout: #8fd07c;    /* 嫩绿（发芽） */
+  --growth-young: #5cb85c;     /* 幼绿（苗期） */
+  --growth-mature: #2e7d32;    /* 深绿（长成） */
+
+  /* 间距系统（0.25rem 倍数） */
+  --space-xs: 0.25rem;   /* 4px */
+  --space-sm: 0.5rem;    /* 8px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2.5rem;    /* 40px */
+
+  /* 圆角 */
+  --radius: 16px;
+  --radius-sm: 10px;
+
   /* 文字 */
   --text-main: #2f3e2e;
   --text-sub: #5c6b58;
@@ -20,9 +37,6 @@
   --card-bg: rgba(255, 255, 255, 0.9);
   --card-border: #cfe3cf;
   --shadow: 0 8px 24px rgba(46, 78, 42, 0.12);
-
-  --radius: 16px;
-  --radius-sm: 10px;
 }
 
 * {
@@ -102,7 +116,7 @@ button {
 }
 
 .setup-title {
-  font-size: 36px;
+  font-size: clamp(1.75rem, 4vw, 2.25rem); /* 流体排版：28px → 36px */
   font-weight: 800;
   letter-spacing: -0.5px;
   background: linear-gradient(135deg, #2f7a2e 0%, #4caf50 60%, #8bc34a 100%);
@@ -114,7 +128,7 @@ button {
 
 .setup-subtitle {
   color: var(--text-sub);
-  font-size: 14px;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   margin-bottom: 26px;
   letter-spacing: 0.3px;
 }
@@ -572,7 +586,7 @@ button {
 }
 
 .history-header h1 {
-  font-size: 24px;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
 }
 
 /* ---- 树种图鉴（历史页） ---- */
@@ -1195,7 +1209,7 @@ button {
 }
 
 .report-card h2 {
-  font-size: 22px;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
   color: var(--leaf-dark);
   margin-bottom: 16px;
 }
