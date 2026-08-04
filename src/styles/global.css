@@ -1515,8 +1515,120 @@ button {
   animation: fadeUp 0.45s ease-out;
 }
 
-@media (max-width: 520px) {
+/* ============ 响应式系统（三档断点） ============ */
+
+/* ---- 手机（<600px）：紧凑单列，触控友好 ---- */
+@media (max-width: 600px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .record-item { flex-direction: column; align-items: flex-start; }
   .record-msg { text-align: left; max-width: 100%; }
+
+  /* 设置卡：更紧凑 */
+  .setup-card {
+    padding: 24px 18px;
+    border-radius: 18px;
+    max-width: 100%;
+  }
+  .setup-title { font-size: 30px; }
+  .weather-options { gap: 6px; }
+  .weather-option { padding: 10px 4px; }
+  .weather-icon { font-size: 20px; }
+  .weather-desc { font-size: 9px; }
+  .species-option { min-width: 60px; padding: 8px 8px; }
+  .species-emoji { font-size: 20px; }
+  .preset-btn { padding: 7px 12px; font-size: 13px; }
+  .growth-option { padding: 7px 10px; font-size: 12px; }
+
+  /* 导航：触控目标加大 */
+  .nav-item { padding: 10px 14px; }
+  .nav-icon { font-size: 24px; }
+  .nav-label { font-size: 10px; }
+
+  /* 历史/周报/场景页 */
+  .history-view, .report-view, .scene-studio { padding: 14px; }
+  .forest-canopy .canopy-tree { font-size: 14px; }
+  .forest-canopy .canopy-tree.big { font-size: 18px; }
+  .forest-canopy .canopy-tree.mid { font-size: 15px; }
+  .count-num { font-size: 28px; }
+  .collection-card { padding: 8px 2px; }
+  .collection-emoji { font-size: 22px; }
+  .collection-desc { min-height: 30px; }
+
+  /* 场景工作室 */
+  .scene-item { flex-wrap: wrap; }
+  .scene-item-info { flex: 1 1 100%; order: 3; }
+  .scene-item .link-toggle { order: 2; }
+
+  /* 通用按钮触控高度 */
+  .start-btn, .save-btn, .link-toggle, .ghost-btn { min-height: 44px; }
+  .custom-input { min-height: 44px; }
+}
+
+/* ---- 桌面（>1024px）：宽屏布局 ---- */
+@media (min-width: 1024px) {
+  /* 主内容区加宽 */
+  .history-view, .report-view, .scene-studio {
+    max-width: 960px;
+    padding: 32px;
+  }
+
+  /* 设置卡更宽 */
+  .setup-card { max-width: 520px; }
+
+  /* 历史统计：四列等宽 */
+  .stats-row { grid-template-columns: repeat(4, 1fr); }
+
+  /* 图鉴网格：更多列 */
+  .collection-grid { grid-template-columns: repeat(5, 1fr); }
+
+  /* 底部导航：居中悬浮胶囊（桌面优雅形态） */
+  .bottom-nav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: 24px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 12px 40px rgba(46, 78, 42, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    padding: 6px 10px;
+    width: auto;
+  }
+  .nav-item { padding: 10px 22px; }
+  .main-view { padding-bottom: 96px; }
+
+  /* 记录列表两列布局（桌面） */
+  .record-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .record-item { height: 100%; }
+
+  /* 场景列表两列 */
+  .scene-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}
+
+/* ---- 平板（600-1024px）：中间态微调 ---- */
+@media (min-width: 601px) and (max-width: 1023px) {
+  .history-view, .report-view, .scene-studio {
+    max-width: 720px;
+  }
+  .record-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .record-item { height: 100%; }
+}
+
+/* 高度受限的小屏（如横屏手机）：压缩场景 UI */
+@media (max-height: 500px) and (max-width: 900px) {
+  .timer-bar { top: 8px; padding: 6px 16px; min-width: 200px; }
+  .timer-text { font-size: 22px; }
+  .controls { bottom: 8px; }
+  .weather-switcher { top: 8px; right: 8px; }
 }
