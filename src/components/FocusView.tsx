@@ -1,4 +1,5 @@
-// 专注视图 V7：rAF 帧同步驱动 + 快照恢复 + 积雪消融 + 季节 + 枯树 + 场景
+// 专注视图 V8：rAF 帧同步驱动 + 快照恢复 + 积雪消融 + 季节 + 枯树 + 场景
+// V8 新增：挑战模式（暴风雨+双倍奖励）/ 落叶风力物理 / 连携效应 / 树长大系统通知 / Web Worker 生长计算
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FocusRecord, GrowthState, PlantedTree, Season, Weather } from '../types'
 import {
@@ -14,7 +15,7 @@ import {
   saveSettings,
 } from '../services/storageService'
 import { generateEncouragement } from '../services/aiService'
-import { computeUnlockedSpecies } from '../services/treeSpecies'
+import { computeUnlockedSpecies, getSpecies } from '../services/treeSpecies'
 import { getCurrentSeason } from '../services/seasonService'
 import { getScene } from '../services/sceneService'
 import { useFocusTimer } from '../hooks/useFocusTimer'
@@ -25,6 +26,39 @@ import { Ground } from './Ground'
 interface FocusViewProps {
   initialMinutes: number
   onExit: () => void
+}
+
+/** 树长大系统通知（PWA；需用户授权，失败静默） */
+function notifyTreeGrown(speciesName: string, batch: number): void {
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    new Notification('🌳 大树长成！', {
+      body: `第 ${batch} 棵${speciesName}长成啦！新种子即将落下，继续保持专注～`,
+      tag: `focus-tree-grown-${batch}`,
+    })
+  } catch {
+    /* 通知失败静默 */
+  }
+}
+
+/** 请求通知权限（在用户手势后调用） */
+function requestNotifyPermission(): void {
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 树种显示名（通知文案用） */
+function speciesName(id: string): string {
+  try {
+    return getSpecies(id).name
+  } catch {
+    return '树'
+  }
 }
 
 function formatTime(ms: number): string {
@@ -62,7 +96,8 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   const { elapsedMs, paused, finished } = timer
 
   // 设置：天气 + 种子数 + 生长周期 + 树种（会话开始时锁定）
-  const [weather, setWeather] = useState<Weather>(() => getSettings().weather)
+  const [challengeMode] = useState(() => getSettings().challengeMode)
+  const [weather, setWeather] = useState<Weather>(() => (getSettings().challengeMode ? 'storm' : getSettings().weather))
   const [seedCount, setSeedCount] = useState(() => Math.min(3, Math.max(1, getSettings().seedCount)))
   const [growthMinutes, setGrowthMinutes] = useState(() => getSettings().growthMinutes)
   const [speciesId] = useState(() => getSettings().speciesId)
@@ -104,11 +139,58 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
 
   // 雨天加速：等效生长分钟（按当前生长周期折算比例）
   const effMinutes = effectiveGrowthMinutes(elapsedMs / 60_000, weather)
-  const growth: GrowthState = useMemo(
-    () => computeGrowth(effMinutes, growthMinutes),
-    [effMinutes, growthMinutes]
-  )
+
+  // Web Worker 生长计算：主线程只渲染，Worker 每秒算生长状态（降载）
+  // fallback：Worker 不可用时同步计算
+  const [growth, setGrowth] = useState<GrowthState>(() => computeGrowth(effMinutes, growthMinutes))
+  const workerRef = useRef<Worker | null>(null)
+  const workerSeqRef = useRef(0)
+  useEffect(() => {
+    // 初始化 Worker（惰性单例）
+    if (typeof window !== 'undefined' && typeof Worker !== 'undefined' && !workerRef.current) {
+      try {
+        workerRef.current = new Worker(new URL('../worker/growthWorker.ts', import.meta.url), { type: 'module' })
+        workerRef.current.onmessage = (e: MessageEvent<{ type: string; growth?: GrowthState }>) => {
+          if (e.data?.type === 'result' && e.data.growth) {
+            setGrowth(e.data.growth)
+          }
+        }
+      } catch {
+        workerRef.current = null
+      }
+    }
+    return () => {
+      workerRef.current?.terminate()
+      workerRef.current = null
+    }
+  }, [])
+  useEffect(() => {
+    const w = workerRef.current
+    if (w) {
+      const id = ++workerSeqRef.current
+      w.postMessage({ type: 'compute', id, elapsedMinutes: effMinutes, fullMinutes: growthMinutes })
+    } else {
+      // fallback：主线程直接计算
+      setGrowth(computeGrowth(effMinutes, growthMinutes))
+    }
+  }, [effMinutes, growthMinutes])
   const treeMatureNow = isTreeMature(effMinutes, growthMinutes)
+
+  // 风力物理：阵风缓变（正弦 + 随机阵风），驱动落叶/雨幕水平偏移
+  const [windStrength, setWindStrength] = useState(0)
+  useEffect(() => {
+    let rafId = 0
+    const t0 = Date.now()
+    const loop = () => {
+      const t = (Date.now() - t0) / 1000
+      // 主风 8s 周期正弦 + 阵风（每 11s 一个脉冲）
+      const gust = Math.sin(t / 11 * Math.PI * 2) * Math.sin(t * 1.7) * 0.35
+      setWindStrength(Math.max(-1, Math.min(1, Math.sin(t / 4) * 0.55 + gust)))
+      rafId = requestAnimationFrame(loop)
+    }
+    rafId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
   // 积雪程度：持久状态（雪天累积，切走后缓慢消融）
   const [snowLevel, setSnowLevel] = useState(0)
@@ -134,7 +216,7 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
     const settings = getSettings()
     const snapshot = timer.restore()
     if (snapshot) {
-      setWeather(snapshot.weather ?? settings.weather)
+      setWeather(snapshot.challengeMode ? 'storm' : (snapshot.weather ?? settings.weather))
       setSeedCount(snapshot.seedCount ?? 1)
       setGrowthMinutes(snapshot.growthMinutes ?? settings.growthMinutes)
       setPlantedTrees(snapshot.plantedTrees ?? [])
@@ -143,21 +225,24 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
       setShowIntro(false)
       return
     }
-    // 新会话
-    setWeather(settings.weather)
+    // 新会话（挑战模式：强制暴风雨天气）
+    setWeather(settings.challengeMode ? 'storm' : settings.weather)
     setSeedCount(settings.seedCount)
     setGrowthMinutes(settings.growthMinutes)
     const xs = makeSeedPositions(settings.seedCount)
     setSeedXs(xs)
     timer.begin(plannedMs)
+    // 请求系统通知权限（用户点击开始后的手势上下文）
+    requestNotifyPermission()
     // 立即保存完整快照（覆盖 begin 的占位）
     timer.persist({
       plannedMinutes: plannedMs / 60_000,
-      weather: settings.weather,
+      weather: settings.challengeMode ? 'storm' : settings.weather,
       seedCount: settings.seedCount,
       growthMinutes: settings.growthMinutes,
       seedXs: xs,
       plantedTrees: [],
+      challengeMode: settings.challengeMode,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -197,18 +282,21 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elapsedMs, finished])
 
-  // 大树长成 → 记录历史树（含出生天气遗产 + 稀有变异） + 落新种子
+  // 大树长成 → 记录历史树（含出生天气遗产 + 稀有变异） + 落新种子 + 系统通知 + 连携效应
   useEffect(() => {
     if (!treeMatureNow || finished) return
-    // 把当前批次树加入历史（记录出生天气：雨天树带露珠、雪天树带积雪）
+    // 把当前批次树加入历史（记录出生天气：雨天树带露珠、雪天树带积雪；记录树种供连携判定）
     const batchTrees: PlantedTree[] = seedXs.map((x, i) => ({
       x,
       index: batchRef.current * seedCount + i,
       plantedAt: Date.now(),
       birthWeather: weather,
+      speciesId,
       // 1% 概率变异为金色树（稀有收藏）
       variant: Math.random() < 0.01 ? 'golden' : undefined,
     }))
+    // 系统通知：树长成（PWA 通知 API）
+    notifyTreeGrown(speciesName(speciesId), batchRef.current + 1)
     setPlantedTrees((prev) => {
       // 合并：新批次在后
       const merged = [...prev, ...batchTrees]
@@ -224,13 +312,31 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [treeMatureNow, finished])
 
+  // 连携效应：连续 3 棵同种树 → 树旁长蘑菇/小花丛（小树林氛围）
+  const companions = useMemo(() => {
+    if (plantedTrees.length < 3) return []
+    const last3 = plantedTrees.slice(-3)
+    const allSame = last3.every((t) => t.speciesId === last3[0].speciesId && t.speciesId)
+    if (!allSame) return []
+    const out: Array<{ x: number; type: 'mushroom' | 'flower' }> = []
+    last3.forEach((t, i) => {
+      // 每棵树旁 1~2 个点缀，交替蘑菇/小花
+      out.push({ x: t.x + (i % 2 === 0 ? -34 : 30), type: i % 2 === 0 ? 'mushroom' : 'flower' })
+      if (i === 1) out.push({ x: t.x - 6, type: 'flower' })
+    })
+    return out
+  }, [plantedTrees])
+
   // 会话结束
   const endSession = async (completed: boolean) => {
     if (finished) return
     const actualMs = timer.getActualMs()
     timer.finish()
     // 当前批次树也计入本次专注的树数
-    const treesThisSession = batchRef.current * seedCount + seedXs.length
+    let treesThisSession = batchRef.current * seedCount + seedXs.length
+    // 挑战模式奖励：完整完成时双倍树数（暴风雨的回报）
+    const challengeBonus = challengeMode && completed
+    if (challengeBonus) treesThisSession *= 2
     const record: FocusRecord = {
       id: `focus-${Date.now()}`,
       plannedMinutes: plannedMs / 60_000,
@@ -240,6 +346,8 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
       endedAt: Date.now(),
       weather,
       treeCount: treesThisSession,
+      speciesId,
+      challengeBonus,
     }
     addRecord(record)
     setFinishedRecord(record)
@@ -258,8 +366,9 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elapsedMs, plannedMs, finished])
 
-  // 切换天气（立即生效，仅当前会话）
+  // 切换天气（立即生效，仅当前会话；挑战模式天气锁定暴风雨，不可切换）
   const switchWeather = (w: Weather) => {
+    if (challengeMode) return
     setWeather(w)
     saveSettings({ weather: w })
   }
@@ -273,6 +382,7 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
           <p className="result-time">
             本次专注 <strong>{finishedRecord.actualMinutes}</strong> 分钟 · 种下{' '}
             <strong>{finishedRecord.treeCount ?? seedCount}</strong> 棵树
+            {finishedRecord.challengeBonus && <span className="bonus-badge">⚡ 挑战双倍奖励</span>}
           </p>
           <p className="result-msg" role="status" aria-live="polite">{encouragement}</p>
           <div className="result-actions">
@@ -289,8 +399,8 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   return (
     <div className="focus-view">
       <div className="scene">
-        {/* 太阳位置 = 专注进度（0 开始 → 1 结束，东升西落） */}
-        <Sky weather={weather} scene={scene} mature={treeMatureNow} sunProgress={Math.min(1, elapsedMs / plannedMs)} />
+        {/* 太阳位置 = 专注进度（0 开始 → 1 结束，东升西落）；风力驱动落叶/雨幕 */}
+        <Sky weather={weather} scene={scene} mature={treeMatureNow} sunProgress={Math.min(1, elapsedMs / plannedMs)} windStrength={windStrength} />
         {/* 根系层（泥土之下）：所有树的根扎进土里 */}
         <svg className="tree-roots-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-hidden>
           {plantedTrees.map((t, i) => {
@@ -314,7 +424,7 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
             />
           ))}
         </svg>
-        <Ground snowLevel={snowLevel} isSnowy={weather === 'snowy'} isRainy={weather === 'rainy'} scene={scene} mature={treeMatureNow} />
+        <Ground snowLevel={snowLevel} isSnowy={weather === 'snowy'} isRainy={weather === 'rainy'} isStorm={weather === 'storm'} scene={scene} mature={treeMatureNow} companions={companions} />
         {/* 地上层（泥土之上）：种子/树干/树枝/树冠 */}
         <svg className="tree-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-hidden>
           {/* 手绘噪点滤镜：给树形添加铅笔质感（feTurbulence 轻扭曲） */}
@@ -378,23 +488,29 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
           </div>
           <div className="timer-sub" aria-live="polite">
             第 {batchRef.current + 1} 批 · {formatTime(elapsedMs)} ·{' '}
-            {weather === 'rainy' ? '🌧️ 雨水滋润生长' : weather === 'snowy' ? '❄️ 雪花飘落' : '☀️ 阳光正好'}
+            {weather === 'rainy' ? '🌧️ 雨水滋润生长' : weather === 'snowy' ? '❄️ 雪花飘落' : weather === 'storm' ? '⛈️ 暴风雨中，成长艰难…' : '☀️ 阳光正好'}
           </div>
         </div>
-        {/* 天气切换 */}
-        <div className="weather-switcher" role="group" aria-label="切换天气">
-          {(['sunny', 'rainy', 'snowy'] as Weather[]).map((w) => (
-            <button
-              key={w}
-              className={`weather-btn ${weather === w ? 'active' : ''}`}
-              onClick={() => switchWeather(w)}
-              aria-label={w === 'sunny' ? '切换到晴天' : w === 'rainy' ? '切换到雨天' : '切换到雪天'}
-              title={w === 'sunny' ? '晴天' : w === 'rainy' ? '雨天（生长加速）' : '雪天（积雪）'}
-            >
-              {w === 'sunny' ? '☀️' : w === 'rainy' ? '🌧️' : '❄️'}
-            </button>
-          ))}
-        </div>
+        {/* 天气切换（挑战模式锁定暴风雨，不显示） */}
+        {!challengeMode && (
+          <div className="weather-switcher" role="group" aria-label="切换天气">
+            {(['sunny', 'rainy', 'snowy'] as Weather[]).map((w) => (
+              <button
+                key={w}
+                className={`weather-btn ${weather === w ? 'active' : ''}`}
+                onClick={() => switchWeather(w)}
+                aria-label={w === 'sunny' ? '切换到晴天' : w === 'rainy' ? '切换到雨天' : '切换到雪天'}
+                title={w === 'sunny' ? '晴天' : w === 'rainy' ? '雨天（生长加速）' : '雪天（积雪）'}
+              >
+                {w === 'sunny' ? '☀️' : w === 'rainy' ? '🌧️' : '❄️'}
+              </button>
+            ))}
+          </div>
+        )}
+        {/* 挑战模式提示条 */}
+        {challengeMode && !finished && (
+          <div className="challenge-toast" role="status" aria-live="polite">⛈️ 暴风雨挑战：生长减缓 40%，完整完成获得双倍树奖励</div>
+        )}
         {/* 控制按钮 */}
         <div className="controls">
           {!paused ? (
