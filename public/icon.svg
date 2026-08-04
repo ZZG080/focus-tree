@@ -1,0 +1,23 @@
+/* 静谧夜林图标：发光手绘树 */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <filter id="g" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0f172a"/>
+  <circle cx="64" cy="40" r="26" fill="none" stroke="#4ade80" stroke-width="3" opacity="0.35" filter="url(#g)"/>
+  <g fill="#4ade80" opacity="0.9">
+    <circle cx="44" cy="34" r="9"/>
+    <circle cx="66" cy="24" r="11"/>
+    <circle cx="84" cy="36" r="9"/>
+    <circle cx="54" cy="48" r="8"/>
+    <circle cx="76" cy="48" r="8"/>
+  </g>
+  <path d="M 62 52 L 62 96 M 62 68 L 50 84 M 62 78 L 76 94" stroke="#2f7d46" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M 50 96 Q 62 102 74 96 Q 62 108 50 96 Z" fill="#2f7d46"/>
+</svg>
