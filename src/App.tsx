@@ -45,52 +45,56 @@ export default function App() {
 
       {phase === 'main' && (
         <>
-          {/* 桌面侧边栏（移动端自动隐藏） */}
-          {!immersive && (
-            <aside className="sidebar">
-              <div className="sidebar-brand">
-                <span className="sidebar-logo">🌳</span>
-                <div>
-                  <div className="sidebar-title">Focus Tree</div>
-                  <div className="sidebar-sub">专注种树</div>
-                </div>
-              </div>
-              <nav className="sidebar-nav">
-                {NAV_ITEMS.map((item) => (
-                  <button
-                    key={item.view}
-                    className={`sidebar-item ${view === item.view ? 'active' : ''}`}
-                    onClick={() => setView(item.view)}
-                  >
-                    <span className="sidebar-icon">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-              <div className="sidebar-footer">
-                <button className="sidebar-item" onClick={() => setView('setup')} title="返回设置">
-                  <span className="sidebar-icon">⚙️</span>
-                  <span>设置</span>
-                </button>
-              </div>
-            </aside>
-          )}
-
           {/* 主内容区 */}
           <main className={`main-content ${immersive ? 'main-immersive' : ''}`}>
-            {view === 'setup' && (
-              <SetupView
-                onStart={handleStart}
-                onShowHistory={() => setView('history')}
-              />
-            )}
-            {view === 'focus' && (
+            {immersive ? (
               <FocusView initialMinutes={focusMinutes} onExit={() => setView('setup')} />
-            )}
-            {view === 'history' && <HistoryView onBack={() => setView('setup')} />}
-            {view === 'report' && <ReportView onBack={() => setView('setup')} />}
-            {view === 'scene' && (
-              <SceneStudio onBack={() => setView('setup')} onApplied={() => setView('setup')} />
+            ) : (
+              <div className="layout">
+                {/* 桌面侧边栏（移动端自动隐藏） */}
+                <aside className="sidebar">
+                  <div className="sidebar-brand">
+                    <span className="sidebar-logo">🌳</span>
+                    <div>
+                      <div className="sidebar-title">Focus Tree</div>
+                      <div className="sidebar-sub">专注种树</div>
+                    </div>
+                  </div>
+                  <nav className="sidebar-nav">
+                    {NAV_ITEMS.map((item) => (
+                      <button
+                        key={item.view}
+                        className={`sidebar-item ${view === item.view ? 'active' : ''}`}
+                        onClick={() => setView(item.view)}
+                      >
+                        <span className="sidebar-icon">{item.icon}</span>
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </nav>
+                  <div className="sidebar-footer">
+                    <button className="sidebar-item" onClick={() => setView('setup')} title="返回设置">
+                      <span className="sidebar-icon">⚙️</span>
+                      <span>设置</span>
+                    </button>
+                  </div>
+                </aside>
+
+                {/* 内容列 */}
+                <div className="layout-main">
+                  {view === 'setup' && (
+                    <SetupView
+                      onStart={handleStart}
+                      onShowHistory={() => setView('history')}
+                    />
+                  )}
+                  {view === 'history' && <HistoryView onBack={() => setView('setup')} />}
+                  {view === 'report' && <ReportView onBack={() => setView('setup')} />}
+                  {view === 'scene' && (
+                    <SceneStudio onBack={() => setView('setup')} onApplied={() => setView('setup')} />
+                  )}
+                </div>
+              </div>
             )}
           </main>
 
