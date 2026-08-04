@@ -12,6 +12,8 @@ interface SkyProps {
   mature?: boolean
   /** 太阳位置进度 0~1（随专注时间移动，模拟时间流逝） */
   sunProgress?: number
+  /** 风力强度 -1~1（影响落叶/雨幕水平偏移，物理化粒子） */
+  windStrength?: number
 }
 
 /** 确定性伪随机（基于索引，保证渲染稳定不闪烁） */
@@ -73,7 +75,7 @@ const SNOW_BACK = Array.from({ length: 34 }, (_, i) => ({
   op: 0.35 + seeded(i, 37) * 0.3,
 }))
 
-export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgress = 0 }: SkyProps) {
+export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgress = 0, windStrength = 0 }: SkyProps) {
   // 鼠标视差：云/山丘随鼠标微动（增加空间深度）
   const [parallax, setParallax] = useState({ x: 0, y: 0 })
   const rafRef = useRef(0)
@@ -122,8 +124,8 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
     ? palette.cloudColor
     : weather === 'snowy'
       ? '#dbe4ec'
-      : weather === 'rainy'
-        ? '#b9cad6'
+      : weather === 'rainy' || weather === 'storm'
+        ? weather === 'storm' ? '#6b7c8e' : '#b9cad6'
         : '#ffffff'
 
   return (
@@ -142,26 +144,28 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
             <stop offset="100%" stopColor="#c9dce8" stopOpacity="0.5" />
           </radialGradient>
         </defs>
-        {/* 太阳（晴天且场景允许时显示；位置随专注进度移动——时间流逝感） */}
+        {/* 月亮（静谧夜林：柔和光晕 + 随专注进度东升西落；光晕强度随高度变化） */}
         {weather === 'sunny' && (!palette || palette.showSun) && (
           <g
-            className="sun"
+            className="moon"
             style={{
               transform: `translate(${sunProgress * 620 - 60}px, ${Math.sin(sunProgress * Math.PI) * -46}px)`,
               transition: 'transform 2s linear',
             }}
           >
-            {/* 光晕强度随太阳高度变化（正午最亮） */}
-            <circle cx="140" cy="95" r="34" fill="#ffd54f" opacity={0.55 + Math.sin(sunProgress * Math.PI) * 0.45} />
-            <circle cx="140" cy="95" r="34" fill="url(#sunHalo)" />
-            <circle cx="140" cy="95" r="14" fill="#fff3b8" />
+            <circle className="moon-halo" cx="140" cy="95" r="42" fill="#e8f4ff" opacity={0.5 + Math.sin(sunProgress * Math.PI) * 0.3} />
+            <circle cx="140" cy="95" r="26" fill="#f4f9ff" />
+            <circle cx="130" cy="88" r="5" fill="#dbe7f5" opacity="0.8" />
+            <circle cx="150" cy="102" r="3.5" fill="#dbe7f5" opacity="0.7" />
+            <circle cx="136" cy="105" r="2.5" fill="#dbe7f5" opacity="0.6" />
           </g>
         )}
-        {/* 云朵：场景色或天气色（视差层：慢速微动） */}
+        {/* 云朵：场景色或天气色（视差层：慢速微动；手绘纸纹滤镜） */}
         <g
           className="cloud cloud-1"
           fill={cloudFill}
           opacity="0.95"
+          filter="url(#rough-paper)"
           style={{ transform: `translate(${parallax.x * -14}px, ${parallax.y * -8}px)` }}
         >
           <ellipse cx="180" cy="120" rx="70" ry="32" />
@@ -170,8 +174,9 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
         </g>
         <g
           className="cloud cloud-2"
-          fill={palette ? palette.cloudColor : weather === 'snowy' ? '#ccd8e2' : weather === 'rainy' ? '#a9bccb' : '#ffffff'}
+          fill={palette ? palette.cloudColor : weather === 'snowy' ? '#ccd8e2' : weather === 'rainy' ? '#a9bccb' : weather === 'storm' ? '#5a6c80' : '#ffffff'}
           opacity="0.9"
+          filter="url(#rough-paper)"
           style={{ transform: `translate(${parallax.x * -22}px, ${parallax.y * -12}px)` }}
         >
           <ellipse cx="720" cy="200" rx="90" ry="38" />
@@ -180,8 +185,9 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
         </g>
         <g
           className="cloud cloud-3"
-          fill={palette ? palette.cloudColor : weather === 'snowy' ? '#e2e9f0' : weather === 'rainy' ? '#c6d4de' : '#ffffff'}
+          fill={palette ? palette.cloudColor : weather === 'snowy' ? '#e2e9f0' : weather === 'rainy' ? '#c6d4de' : weather === 'storm' ? '#78899c' : '#ffffff'}
           opacity="0.85"
+          filter="url(#rough-paper)"
           style={{ transform: `translate(${parallax.x * -30}px, ${parallax.y * -16}px)` }}
         >
           <ellipse cx="420" cy="70" rx="55" ry="24" />
@@ -203,10 +209,28 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
           </g>
         )}
 
+        {/* 星尘粒子层（静谧夜林氛围：微光尘埃缓慢漂移 + 水平摇摆；树之下、背景之上） */}
+        <g className="stardust" fill="#dbeafe">
+          {Array.from({ length: 42 }, (_, i) => (
+            <circle
+              key={`dust-${i}`}
+              className="dust"
+              cx={seeded(i, 71) * 1000}
+              cy={seeded(i, 72) * 520}
+              r={1 + seeded(i, 73) * 1.2}
+              opacity={0.3 + seeded(i, 74) * 0.2}
+              style={{
+                animationDuration: `${9 + seeded(i, 75) * 10}s`,
+                animationDelay: `-${seeded(i, 76) * 12}s`,
+              }}
+            />
+          ))}
+        </g>
+
         {/* 远处山丘剪影（随场景天色，视差层：中速） */}
         <g
           className="hills"
-          fill={palette ? blendHex(palette.skyTop, palette.skyBottom, 0.55) : weather === 'snowy' ? '#8fa8b8' : weather === 'rainy' ? '#7a95a8' : '#9fcfa0'}
+          fill={palette ? blendHex(palette.skyTop, palette.skyBottom, 0.55) : weather === 'snowy' ? '#8fa8b8' : weather === 'rainy' ? '#7a95a8' : weather === 'storm' ? '#4a5a6c' : '#9fcfa0'}
           opacity="0.35"
           style={{ transform: `translate(${parallax.x * -8}px, ${parallax.y * -4}px)` }}
         >
@@ -232,9 +256,13 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
             ))}
           </g>
         )}
-        {/* 场景粒子：落叶（秋日场景） */}
+        {/* 场景粒子：落叶（秋日场景；风力驱动水平飘摆——物理化粒子） */}
         {palette?.particles === 'leaves' && (
-          <g className="leaves" fill="#d96c3f">
+          <g
+            className="leaves"
+            fill="#d96c3f"
+            style={{ ['--wind' as string]: `${windStrength * 60}px` }}
+          >
             {Array.from({ length: 16 }, (_, i) => (
               <path
                 key={`lf-${i}`}
@@ -333,6 +361,60 @@ export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgre
                     animationDuration: `${d.dur}s`,
                     animationDelay: `-${d.delay}s`,
                     ['--drift' as string]: `${d.drift}px`,
+                  }}
+                />
+              ))}
+            </g>
+          </>
+        )}
+
+        {/* ===== 暴风雨（挑战模式）：暗色雨幕 + 闪电劈闪 ===== */}
+        {weather === 'storm' && (
+          <>
+            {/* 闪电：随机劈落，CSS 动画闪烁 */}
+            <g className="lightning" stroke="#f4f8ff" strokeWidth="2.6" strokeLinecap="round" fill="none" opacity="0.9">
+              <path className="bolt bolt-1" d="M 210 40 L 186 96 L 206 96 L 178 158 L 226 92 L 204 92 Z" fill="#f4f8ff" stroke="none" opacity="0.95" />
+              <path className="bolt bolt-2" d="M 700 60 L 672 122 L 696 122 L 660 190 L 714 116 L 690 116 Z" fill="#f4f8ff" stroke="none" opacity="0.95" />
+            </g>
+            {/* 暴风雨雨幕：比普通雨更密更快（挑战模式的压迫感） */}
+            <g
+              className="rain-layer rain-back"
+              stroke="#8fa6bd"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              style={{ ['--wind' as string]: `${windStrength * 26}px` }}
+            >
+              {RAIN_BACK.map((d, i) => (
+                <line
+                  key={`sb-rb-${i}`}
+                  className="rain-drop"
+                  x1={d.x} y1={d.y}
+                  x2={d.x - 7} y2={d.y + d.len}
+                  opacity={d.op}
+                  style={{
+                    animationDuration: `${d.dur * 0.75}s`,
+                    animationDelay: `-${d.delay * 0.7}s`,
+                  }}
+                />
+              ))}
+            </g>
+            <g
+              className="rain-layer rain-fore"
+              stroke="#6d85a0"
+              strokeWidth="2"
+              strokeLinecap="round"
+              style={{ ['--wind' as string]: `${windStrength * 40}px` }}
+            >
+              {RAIN_FORE.map((d, i) => (
+                <line
+                  key={`sb-rf-${i}`}
+                  className="rain-drop"
+                  x1={d.x} y1={d.y}
+                  x2={d.x - 9} y2={d.y + d.len}
+                  opacity={d.op}
+                  style={{
+                    animationDuration: `${d.dur * 0.7}s`,
+                    animationDelay: `-${d.delay * 0.6}s`,
                   }}
                 />
               ))}
