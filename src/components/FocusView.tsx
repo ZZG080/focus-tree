@@ -140,40 +140,13 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   // 雨天加速：等效生长分钟（按当前生长周期折算比例）
   const effMinutes = effectiveGrowthMinutes(elapsedMs / 60_000, weather)
 
-  // Web Worker 生长计算：主线程只渲染，Worker 每秒算生长状态（降载）
-  // fallback：Worker 不可用时同步计算
-  const [growth, setGrowth] = useState<GrowthState>(() => computeGrowth(effMinutes, growthMinutes))
-  const workerRef = useRef<Worker | null>(null)
-  const workerSeqRef = useRef(0)
-  useEffect(() => {
-    // 初始化 Worker（惰性单例）
-    if (typeof window !== 'undefined' && typeof Worker !== 'undefined' && !workerRef.current) {
-      try {
-        workerRef.current = new Worker(new URL('../worker/growthWorker.ts', import.meta.url), { type: 'module' })
-        workerRef.current.onmessage = (e: MessageEvent<{ type: string; growth?: GrowthState }>) => {
-          if (e.data?.type === 'result' && e.data.growth) {
-            setGrowth(e.data.growth)
-          }
-        }
-      } catch {
-        workerRef.current = null
-      }
-    }
-    return () => {
-      workerRef.current?.terminate()
-      workerRef.current = null
-    }
-  }, [])
-  useEffect(() => {
-    const w = workerRef.current
-    if (w) {
-      const id = ++workerSeqRef.current
-      w.postMessage({ type: 'compute', id, elapsedMinutes: effMinutes, fullMinutes: growthMinutes })
-    } else {
-      // fallback：主线程直接计算
-      setGrowth(computeGrowth(effMinutes, growthMinutes))
-    }
-  }, [effMinutes, growthMinutes])
+  // 生长计算：同步 useMemo（computeGrowth 为 O(1) 纯函数，微秒级；
+  // 曾尝试 Web Worker 异步化，但 dev 模式下 worker 消息链路不稳定会导致
+  // growth 卡死在初始值（树不生长）——恢复同步计算，稳定可靠）
+  const growth: GrowthState = useMemo(
+    () => computeGrowth(effMinutes, growthMinutes),
+    [effMinutes, growthMinutes]
+  )
   const treeMatureNow = isTreeMature(effMinutes, growthMinutes)
 
   // 风力物理：阵风缓变（正弦 + 随机阵风），驱动落叶/雨幕水平偏移
