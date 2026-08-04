@@ -59,6 +59,21 @@
 }
 
 /* ---- 天气粒子动画（错开时长，真实感） ---- */
+/* 天气切换：粒子层整体淡入淡出（避免瞬时销毁的突兀感） */
+.rain-layer,
+.snow-layer,
+.fireflies,
+.leaves,
+.sakura {
+  animation: weatherFadeIn 0.6s ease-out;
+  will-change: opacity;
+}
+
+@keyframes weatherFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes rainFall {
   0% { transform: translate(0, -30px); opacity: 0; }
   8% { opacity: 1; }
@@ -207,6 +222,67 @@
   transition: transform 0.6s ease-in, opacity 0.6s ease-in;
 }
 
+/* 树冠叶片渐显：从中心向外"弹出"（生长爆发力） */
+@keyframes crownPop {
+  0% { opacity: 0; transform: scale(0.72); }
+  60% { opacity: 0.9; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.crown-grow {
+  animation: crownPop 0.7s ease-out forwards;
+  transform-origin: 50% 60%;
+  will-change: transform, opacity;
+}
+
+/* 微交互：暂停/继续时树轻微震颤 + 柔光（呼吸感） */
+@keyframes treeTremble {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2.5px) rotate(-0.4deg); }
+  40% { transform: translateX(2.5px) rotate(0.4deg); }
+  60% { transform: translateX(-1.5px); }
+  80% { transform: translateX(1.5px); }
+}
+
+.tree-tremble {
+  animation: treeTremble 0.55s ease-in-out;
+}
+
+/* 暂停时的柔光呼吸（树被"定格"的氛围） */
+@keyframes treeGlow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(139, 195, 74, 0.25)); }
+  50% { filter: drop-shadow(0 0 14px rgba(139, 195, 74, 0.55)); }
+}
+
+.tree-paused-glow {
+  animation: treeGlow 2.4s ease-in-out infinite;
+}
+
+/* 树枝"墨水绘制"生长：描边路径用 dashoffset 模拟自然延伸（无布局抖动） */
+@keyframes branchDraw {
+  from { stroke-dashoffset: var(--branch-len, 120); }
+  to { stroke-dashoffset: 0; }
+}
+
+.branch-grow path {
+  stroke-dasharray: var(--branch-len, 120);
+  stroke-dashoffset: var(--branch-len, 120);
+  animation: branchDraw 0.8s ease-out forwards;
+}
+
+/* 树干从土里"顶出"（transform 无布局抖动） */
+@keyframes trunkRise {
+  from { transform: scaleY(0.2); opacity: 0.3; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.trunk-grow {
+  animation: trunkRise 0.5s ease-out forwards;
+  transform-origin: 50% 100%;
+  transform-box: fill-box;
+  will-change: transform, opacity;
+}
+
 /* 镜头聚焦 */
 @keyframes treeFocus {
   0% { transform: scale(1); opacity: 1; }
@@ -259,6 +335,7 @@
 /* ---- 云朵漂浮 ---- */
 .cloud {
   animation: cloudDrift 28s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 .cloud-1 { animation-duration: 32s; }
@@ -270,6 +347,12 @@
   to { transform: translateX(24px); }
 }
 
+/* 山丘视差层（随鼠标微动） */
+.hills {
+  will-change: transform;
+  transition: transform 0.2s ease-out;
+}
+
 .birds {
   animation: birdFly 24s ease-in-out infinite alternate;
 }
@@ -277,6 +360,23 @@
 @keyframes birdFly {
   from { transform: translateX(0); }
   to { transform: translateX(40px); }
+}
+
+/* 天气切换：天空背景平滑过渡 */
+.sky {
+  transition: background 1.2s ease;
+}
+
+/* ---- 雨滴涟漪（雨落地扩散淡出，音画同步感） ---- */
+@keyframes rippleExpand {
+  0% { transform: scale(0.2); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.ripple {
+  animation: rippleExpand 1.4s ease-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
 }
 
 /* ---- 天气切换按钮 ---- */
