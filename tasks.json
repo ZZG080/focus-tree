@@ -1,0 +1,21 @@
+[
+  { "id": "001", "task": "搭建 Vite + React + TS 项目骨架", "status": "todo", "priority": "high" },
+  { "id": "002", "task": "实现 types.ts + storageService（localStorage 持久化）", "status": "todo", "priority": "high" },
+  { "id": "003", "task": "实现 useGrowthCurve 生长曲线（分段映射 + 单元测试）", "status": "todo", "priority": "high" },
+  { "id": "004", "task": "实现 useFocusTimer 计时状态机（可断点恢复）", "status": "todo", "priority": "high" },
+  { "id": "005", "task": "实现 TreeLayers SVG 手绘树形（种子/根/芽/苗/大树分层）", "status": "todo", "priority": "high" },
+  { "id": "006", "task": "实现 Sky + Ground 场景（蓝天白云 + 草地泥土 5:1 / 3:1）", "status": "todo", "priority": "medium" },
+  { "id": "007", "task": "实现 SetupView 时长设置界面", "status": "todo", "priority": "medium" },
+  { "id": "008", "task": "实现 FocusView 专注场景（种子落下 + 镜头聚焦 + 生长动画）", "status": "todo", "priority": "high" },
+  { "id": "009", "task": "实现 aiService（API key 可配 + 内置模板兜底）", "status": "todo", "priority": "medium" },
+  { "id": "010", "task": "实现 HistoryView 专注记录列表", "status": "todo", "priority": "medium" },
+  { "id": "011", "task": "整体联调：视觉打磨 + 手绘风格 + 交互完善", "status": "todo", "priority": "medium" },
+  { "id": "012", "task": "测试验证 + 部署（本地运行）", "status": "completed", "priority": "high" },
+  { "id": "013", "task": "V2: 地面改版（上1/3绿下2/3棕，种子入棕区）+ 积雪效果", "status": "completed", "priority": "high" },
+  { "id": "014", "task": "V2: 天气系统（晴天/雪天/雨天）+ 雨天加速 + 天气设置", "status": "completed", "priority": "high" },
+  { "id": "015", "task": "V2: 种子数设置（多颗同时落下同步长大，保持一致）", "status": "completed", "priority": "high" },
+  { "id": "016", "task": "V2: 多树遮挡（先种在前，后种虚化递减）", "status": "completed", "priority": "high" },
+  { "id": "017", "task": "V2: 已种树总棵数可交互统计界面", "status": "completed", "priority": "medium" },
+  { "id": "018", "task": "V2: 修复雪天草地闪烁 + 完成后看不到历史记录", "status": "completed", "priority": "high" },
+  { "id": "019", "task": "V2: 桌面快捷方式客户端（浏览器直达）", "status": "completed", "priority": "medium" }
+]
