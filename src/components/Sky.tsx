@@ -1,11 +1,17 @@
-// 天空 V4：场景化配色 + 太阳光晕 + 粒子效果（萤火虫/落叶/樱花/雨/雪）
+// 天空 V5：场景化配色 + 太阳光晕 + 粒子效果（萤火虫/落叶/樱花/雨/雪）+ 成熟期飞鸟 + 鼠标视差
 // 场景调色板来自 sceneService（内置预置 + AI 共创）
+import { memo, useEffect, useRef, useState } from 'react'
 import type { CustomScene, Weather } from '../types'
+import { useDebouncedWindowSize } from '../hooks/useDebounce'
 
 interface SkyProps {
   weather: Weather
   /** 场景（配色 + 粒子） */
   scene?: CustomScene
+  /** 树是否进入成熟期（飞鸟增多反馈） */
+  mature?: boolean
+  /** 太阳位置进度 0~1（随专注时间移动，模拟时间流逝） */
+  sunProgress?: number
 }
 
 /** 确定性伪随机（基于索引，保证渲染稳定不闪烁） */
@@ -67,7 +73,44 @@ const SNOW_BACK = Array.from({ length: 34 }, (_, i) => ({
   op: 0.35 + seeded(i, 37) * 0.3,
 }))
 
-export function Sky({ weather, scene }: SkyProps) {
+export const Sky = memo(function Sky({ weather, scene, mature = false, sunProgress = 0 }: SkyProps) {
+  // 鼠标视差：云/山丘随鼠标微动（增加空间深度）
+  const [parallax, setParallax] = useState({ x: 0, y: 0 })
+  const rafRef = useRef(0)
+  const targetRef = useRef({ x: 0, y: 0 })
+  // 防抖窗口尺寸：resize 停止 200ms 后才更新归一化基准（避免拖动窗口时视差跳变）
+  const winSize = useDebouncedWindowSize(200)
+  const winSizeRef = useRef(winSize)
+  winSizeRef.current = winSize
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      // 归一化到 -0.5 ~ 0.5（基于防抖后的窗口尺寸）
+      const { width, height } = winSizeRef.current
+      targetRef.current = {
+        x: width > 0 ? e.clientX / width - 0.5 : 0,
+        y: height > 0 ? e.clientY / height - 0.5 : 0,
+      }
+    }
+    // rAF 平滑插值（避免 mousemove 高频 setState）
+    const loop = () => {
+      setParallax((prev) => {
+        const t = targetRef.current
+        const nx = prev.x + (t.x - prev.x) * 0.06
+        const ny = prev.y + (t.y - prev.y) * 0.06
+        if (Math.abs(nx - prev.x) < 0.0005 && Math.abs(ny - prev.y) < 0.0005) return prev
+        return { x: nx, y: ny }
+      })
+      rafRef.current = requestAnimationFrame(loop)
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    rafRef.current = requestAnimationFrame(loop)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   // 场景化配色：优先场景调色板，天气覆盖天空明暗
   const palette = scene
   const skyStyle = palette
@@ -99,19 +142,27 @@ export function Sky({ weather, scene }: SkyProps) {
             <stop offset="100%" stopColor="#c9dce8" stopOpacity="0.5" />
           </radialGradient>
         </defs>
-        {/* 太阳（晴天且场景允许时显示） */}
+        {/* 太阳（晴天且场景允许时显示；位置随专注进度移动——时间流逝感） */}
         {weather === 'sunny' && (!palette || palette.showSun) && (
-          <g className="sun">
-            <circle cx="140" cy="95" r="34" fill="#ffd54f" />
+          <g
+            className="sun"
+            style={{
+              transform: `translate(${sunProgress * 620 - 60}px, ${Math.sin(sunProgress * Math.PI) * -46}px)`,
+              transition: 'transform 2s linear',
+            }}
+          >
+            {/* 光晕强度随太阳高度变化（正午最亮） */}
+            <circle cx="140" cy="95" r="34" fill="#ffd54f" opacity={0.55 + Math.sin(sunProgress * Math.PI) * 0.45} />
             <circle cx="140" cy="95" r="34" fill="url(#sunHalo)" />
             <circle cx="140" cy="95" r="14" fill="#fff3b8" />
           </g>
         )}
-        {/* 云朵：场景色或天气色 */}
+        {/* 云朵：场景色或天气色（视差层：慢速微动） */}
         <g
           className="cloud cloud-1"
           fill={cloudFill}
           opacity="0.95"
+          style={{ transform: `translate(${parallax.x * -14}px, ${parallax.y * -8}px)` }}
         >
           <ellipse cx="180" cy="120" rx="70" ry="32" />
           <ellipse cx="225" cy="105" rx="48" ry="26" />
@@ -121,6 +172,7 @@ export function Sky({ weather, scene }: SkyProps) {
           className="cloud cloud-2"
           fill={palette ? palette.cloudColor : weather === 'snowy' ? '#ccd8e2' : weather === 'rainy' ? '#a9bccb' : '#ffffff'}
           opacity="0.9"
+          style={{ transform: `translate(${parallax.x * -22}px, ${parallax.y * -12}px)` }}
         >
           <ellipse cx="720" cy="200" rx="90" ry="38" />
           <ellipse cx="780" cy="180" rx="55" ry="28" />
@@ -130,24 +182,33 @@ export function Sky({ weather, scene }: SkyProps) {
           className="cloud cloud-3"
           fill={palette ? palette.cloudColor : weather === 'snowy' ? '#e2e9f0' : weather === 'rainy' ? '#c6d4de' : '#ffffff'}
           opacity="0.85"
+          style={{ transform: `translate(${parallax.x * -30}px, ${parallax.y * -16}px)` }}
         >
           <ellipse cx="420" cy="70" rx="55" ry="24" />
           <ellipse cx="455" cy="58" rx="36" ry="18" />
           <ellipse cx="388" cy="64" rx="28" ry="15" />
         </g>
-        {/* 晴天：远处小鸟 */}
+        {/* 飞鸟：平时 2 只，成熟期增至 5 只（环境成就反馈） */}
         {weather === 'sunny' && (!palette || palette.showSun) && (
           <g className="birds" stroke="#5a6b7a" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.5">
             <path d="M 300 150 q 7 -9 14 0 q 7 -9 14 0" />
             <path d="M 345 165 q 6 -8 12 0 q 6 -8 12 0" />
+            {mature && (
+              <>
+                <path d="M 520 120 q 6 -8 12 0 q 6 -8 12 0" />
+                <path d="M 560 132 q 5 -7 10 0 q 5 -7 10 0" />
+                <path d="M 600 142 q 6 -8 12 0 q 6 -8 12 0" />
+              </>
+            )}
           </g>
         )}
 
-        {/* 远处山丘剪影（随场景天色） */}
+        {/* 远处山丘剪影（随场景天色，视差层：中速） */}
         <g
           className="hills"
           fill={palette ? blendHex(palette.skyTop, palette.skyBottom, 0.55) : weather === 'snowy' ? '#8fa8b8' : weather === 'rainy' ? '#7a95a8' : '#9fcfa0'}
           opacity="0.35"
+          style={{ transform: `translate(${parallax.x * -8}px, ${parallax.y * -4}px)` }}
         >
           <path d="M 0 580 L 0 500 Q 90 468 180 496 Q 270 524 360 492 Q 450 460 540 490 Q 630 520 720 488 Q 810 456 900 486 Q 950 500 1000 484 L 1000 580 Z" />
           <path d="M 0 580 L 0 528 Q 120 500 240 524 Q 360 548 480 520 Q 600 492 720 518 Q 840 544 1000 516 L 1000 580 Z" opacity="0.6" />
@@ -281,4 +342,4 @@ export function Sky({ weather, scene }: SkyProps) {
       </svg>
     </div>
   )
-}
+})
