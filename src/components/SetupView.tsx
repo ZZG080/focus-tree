@@ -30,6 +30,8 @@ export function SetupView({ onStart, onShowHistory }: SetupViewProps) {
   const [settings] = useState(getSettings)
   const [minutes, setMinutes] = useState(settings.defaultMinutes)
   const [weather, setWeather] = useState<Weather>(settings.weather)
+  const [challengeMode, setChallengeMode] = useState(settings.challengeMode)
+  const [highContrast, setHighContrast] = useState(settings.highContrast)
   const [seedCount, setSeedCount] = useState(settings.seedCount)
   const [growthMinutes, setGrowthMinutes] = useState(settings.growthMinutes)
   const [speciesId, setSpeciesId] = useState(settings.speciesId)
@@ -65,7 +67,7 @@ export function SetupView({ onStart, onShowHistory }: SetupViewProps) {
     const m = Math.min(180, Math.max(1, Math.round(minutes)))
     // 关键修复：新会话必须清除旧快照，避免旧快照的天气/种子数覆盖本次选择
     clearSnapshot()
-    saveSettings({ defaultMinutes: m, weather, seedCount, growthMinutes, speciesId, city })
+    saveSettings({ defaultMinutes: m, weather, seedCount, growthMinutes, speciesId, city, challengeMode, highContrast })
     onStart(m)
   }
 
@@ -187,6 +189,32 @@ export function SetupView({ onStart, onShowHistory }: SetupViewProps) {
             </p>
           )}
           <p className="picker-hint">开启后，专注场景将自动跟随所选城市的实时天气</p>
+        </div>
+
+        {/* 挑战模式（暴风雨） */}
+        <div className="challenge-picker">
+          <div className="picker-label">⚡ 挑战模式</div>
+          <button
+            className={`link-toggle ${challengeMode ? 'on' : ''}`}
+            onClick={() => setChallengeMode((v) => !v)}
+            aria-pressed={challengeMode}
+          >
+            {challengeMode ? '已开启' : '未开启'}
+          </button>
+          <p className="picker-hint">暴风雨天气 · 生长减缓 40% · 完整完成获得双倍树奖励（提前结束无奖励）</p>
+        </div>
+
+        {/* 高对比度模式（无障碍） */}
+        <div className="challenge-picker">
+          <div className="picker-label">♿ 高对比度模式</div>
+          <button
+            className={`link-toggle ${highContrast ? 'on' : ''}`}
+            onClick={() => setHighContrast((v) => !v)}
+            aria-pressed={highContrast}
+          >
+            {highContrast ? '已开启' : '未开启'}
+          </button>
+          <p className="picker-hint">为色弱/视障用户提供黑白高饱和配色方案（立即生效）</p>
         </div>
 
         {/* 生长周期选择 */}
