@@ -22,10 +22,14 @@ export interface FocusRecord {
   weather?: Weather
   /** 本次种下的树数（含当前批次） */
   treeCount?: number
+  /** 本次的树种 id（森林地图渲染用） */
+  speciesId?: string
+  /** 挑战模式双倍奖励加成（完成时 treeCount 翻倍，记录原始数） */
+  challengeBonus?: boolean
 }
 
-/** 天气类型 */
-export type Weather = 'sunny' | 'snowy' | 'rainy'
+/** 天气类型（storm 仅挑战模式出现：暴风雨生长变慢 + 双倍奖励） */
+export type Weather = 'sunny' | 'snowy' | 'rainy' | 'storm'
 
 /** 季节 */
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
@@ -80,6 +84,8 @@ export interface PlantedTree {
   birthWeather?: Weather
   /** 稀有变异（极低概率的金色树等收藏品） */
   variant?: 'golden'
+  /** 树种 id（连携效应判断连续同种） */
+  speciesId?: string
 }
 
 /** 会话快照（用于刷新后断点恢复） */
@@ -100,6 +106,8 @@ export interface SessionSnapshot {
   seedXs: number[]
   /** 历史已种树 */
   plantedTrees: PlantedTree[]
+  /** 挑战模式（暴风雨） */
+  challengeMode?: boolean
 }
 
 /** 应用设置 */
@@ -132,4 +140,8 @@ export interface Settings {
   aiEndpoint: string
   /** AI 模型名 */
   aiModel: string
+  /** 挑战模式（暴风雨天气，生长变慢，完成双倍奖励） */
+  challengeMode: boolean
+  /** 高对比度模式（无障碍：黑白高饱和色系） */
+  highContrast: boolean
 }
