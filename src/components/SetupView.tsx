@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { Weather } from '../types'
 import { GROWTH_PRESETS } from '../services/growthCurve'
-import { clearSnapshot, getSettings, saveSettings } from '../services/storageService'
+import { clearSnapshot, getSettings, getWitherPool, saveSettings } from '../services/storageService'
 import { TREE_SPECIES } from '../services/treeSpecies'
 import { CITIES, fetchRealWeather } from '../services/weatherService'
 
@@ -81,6 +81,9 @@ export function SetupView({ onStart, onShowHistory }: SetupViewProps) {
     <div className="setup-view">
       <div className="setup-card">
         <div className="eyebrow setup-eyebrow">FOCUS · 专注</div>
+        {getWitherPool() > 0 && (
+          <p className="wither-pool-hint">🌫️ 有 {getWitherPool()} 棵枯树待复苏——完成专注，种下的树将先复苏它们</p>
+        )}
         <h1 className="setup-title">🌱 Focus Tree</h1>
         <p className="setup-subtitle">每一次专注，种下一片森林</p>
 
