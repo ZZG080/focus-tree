@@ -80,14 +80,16 @@ describe('buildTrunk 树干 SVG 生成', () => {
     expect(buildTrunk(500, TRUNK_BASE, 400, 1, '#8a5a34')).toEqual([])
   })
 
-  it('完整树干包含主体/纹理/露土根/土丘', () => {
+  it('V10.2 极简矢量干：纯色圆润直干（无纹理/无土丘/无露土根——放弃手绘）', () => {
     const parts = buildTrunk(500, TRUNK_BASE, 300, 18, '#8a5a34')
     const svg = parts.join('')
-    expect(svg).toContain('fill="#8a5a34"') // 树皮
-    expect(svg).toContain('stroke-width="1"') // 纹理
-    expect(svg).toContain('#a9713d') // 土丘
-    // 露土根数量 >= 4
-    expect(svg.match(/stroke-linecap="round"/g)?.length ?? 0).toBeGreaterThanOrEqual(4)
+    expect(parts.length).toBe(1) // 仅主体
+    expect(svg).toContain('fill="#8a5a34"') // 树干色
+    expect(svg).toContain(' Z') // 闭合形状
+    // 手绘元素全部移除
+    expect(svg).not.toContain('#a9713d') // 无土丘
+    expect(svg).not.toContain('stroke-linecap="round"') // 无露土根
+    expect(svg).not.toContain('tree-grow-stroke') // 无描边绘制动画
   })
 })
 
@@ -96,9 +98,9 @@ describe('buildBranches 树枝', () => {
     expect(buildBranches(500, 300, 200, 18, 0)).toBe('')
   })
 
-  it('t>0 生成左右枝', () => {
-    const svg = buildBranches(500, 300, 200, 18, 0.8)
-    expect(svg.match(/<path/g)?.length ?? 0).toBeGreaterThanOrEqual(2)
+  it('V10 圆冠树无外露树枝（树干直顶圆冠）', () => {
+    // 新设计：启动页树样式，树枝隐藏，冠与干由 crownY 重叠连接
+    expect(buildBranches(500, 300, 200, 18, 0.8)).toBe('')
   })
 })
 
