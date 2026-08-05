@@ -71,6 +71,7 @@ export function SceneStudio({ onBack, onApplied }: SceneStudioProps) {
   return (
     <div className="scene-studio">
       <div className="history-header">
+        <div className="eyebrow">SCENE · 场景</div>
         <h1>🎨 场景共创</h1>
         <button className="ghost-btn" onClick={onBack}>← 返回</button>
       </div>
