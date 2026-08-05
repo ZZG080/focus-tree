@@ -13,12 +13,36 @@ const QUICK_TIPS = [
   { icon: '📖', text: '在「森林」见证你的成长' },
 ]
 
-/** 自绘成长小树：种子 → 芽 → 圆冠树（根→茎→干→冠 连贯，与专注场景同风格） */
+/** 自绘成长小树：种子 → 芽 → 密集叶冠树（根→茎→干→冠 连贯，与专注场景同语言：矢量细致风） */
 function GrowthTree({ stage }: { stage: number }) {
   const showRoots = stage >= 1
   const showSprout = stage >= 1
   const showCrown = stage >= 2
   const grown = stage >= 3
+  // 确定性叶片分布（与 treeMath 同风格：密集小叶 + 亮叶 + 边缘叶）
+  const fract = (x: number) => x - Math.floor(x)
+  const leaves: Array<[number, number, number, string]> = []
+  if (showCrown) {
+    for (let i = 0; i < 22; i++) {
+      const u = fract(Math.sin(i * 12.9898) * 43758.5453)
+      const v = fract(Math.sin(i * 78.233) * 12543.123)
+      const ang = u * Math.PI * 2
+      const rad = 0.3 + v * 0.8
+      const lx = 100 + Math.cos(ang) * 34 * rad
+      const ly = 74 + Math.sin(ang) * 34 * rad * 0.55 + 6
+      const lr = 2.4 + v * 3.2
+      const tint = v > 0.72 ? '#8fd07c' : v > 0.4 ? '#57b95a' : '#4caf50'
+      leaves.push([lx, ly, lr, tint])
+    }
+    for (let i = 0; i < 6; i++) {
+      const u = fract(Math.sin(i * 91.7) * 43758.5453)
+      const v = fract(Math.sin(i * 51.3) * 43758.5453)
+      const lx = 100 + (u - 0.5) * 70
+      const ly = 62 - v * 26
+      const lr = 2.2 + fract(Math.sin(i * 33.9) * 43758.5453) * 2
+      leaves.push([lx, ly, lr, '#8fd07c'])
+    }
+  }
   return (
     <svg className="splash-tree-svg" viewBox="0 0 200 170" aria-hidden>
       {/* 地面 */}
@@ -53,16 +77,17 @@ function GrowthTree({ stage }: { stage: number }) {
           <path d="M 100 100 Q 112 90 116 80 Q 104 84 100 100 Z" fill="#5d8f4c" />
         </g>
       )}
-      {/* 圆冠（阶段 2+）：主圆 + 侧圆（🌳 观感），grown 时加高光 */}
+      {/* 密集叶冠（阶段 2+）：基底 + 22 片小叶 + 6 片亮叶（与专注树同风格） */}
       {showCrown && (
         <g className="splash-crown">
-          <ellipse cx="100" cy="74" rx="34" ry="30" fill={grown ? '#57b95a' : '#4caf50'} stroke="#3e8e41" strokeWidth="1.5" />
-          <ellipse cx="76" cy="84" rx="17" ry="14" fill="#57b95a" stroke="#3e8e41" strokeWidth="1.2" />
-          <ellipse cx="125" cy="83" rx="18" ry="15" fill="#5fbf62" stroke="#3e8e41" strokeWidth="1.2" />
+          <ellipse cx="100" cy="74" rx="34" ry="30" fill="#3e8e41" opacity="0.9" />
+          {leaves.map(([lx, ly, lr, tint], i) => (
+            <ellipse key={i} cx={lx.toFixed(1)} cy={ly.toFixed(1)} rx={lr.toFixed(1)} ry={(lr * 0.85).toFixed(1)} fill={tint} opacity="0.95" />
+          ))}
           {grown && (
             <>
-              <ellipse cx="90" cy="62" rx="9" ry="7" fill="#8fd07c" opacity="0.8" />
-              <ellipse cx="114" cy="66" rx="7" ry="5.5" fill="#8fd07c" opacity="0.7" />
+              <ellipse cx="84" cy="58" rx="6" ry="4" fill="#8fd07c" opacity="0.8" />
+              <ellipse cx="112" cy="62" rx="5" ry="3.5" fill="#8fd07c" opacity="0.7" />
             </>
           )}
         </g>
