@@ -134,8 +134,9 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
   return parts.join('')
 }
 
-/** 树干：V10.2 极简矢量卡通干——纯色圆润直干（上窄下宽）+ 底部喇叭口与根融合
- * 放弃手绘元素：无树皮纹理线、无树干节、无土丘、无露土根（根在泥土下由 buildRoots 呈现）
+/** 树干：V10.3 矢量卡通干——纯色圆润直干（上窄下宽）+ 喇叭口 + 泥土表面可见的根
+ * 根茎干连贯：底部喇叭口展开与根系起点融合；4 条矢量露土根从喇叭口两侧爬出
+ * （保持干净矢量风格：平滑圆头曲线，无手绘纹理/节/土丘）
  * 返回 SVG 片段数组
  */
 export function buildTrunk(cx: number, bottomY: number, topY: number, w: number, trunkColor: string): string[] {
@@ -145,8 +146,26 @@ export function buildTrunk(cx: number, bottomY: number, topY: number, w: number,
   const dark = trunkColor === '#8a5a34' ? '#6f4526' : '#5a3a24'
   // 主体：圆润直干，底部喇叭口展开 0.8w（与根系起点融合，根茎干连贯）
   const body = `M ${cx - w * 0.3} ${topY} Q ${cx - w * 0.42 - bend * 0.2} ${topY + h * 0.38} ${cx - w * 0.62} ${bottomY} Q ${cx - w * 0.82} ${bottomY + w * 0.22} ${cx - w * 0.18} ${bottomY + w * 0.16} L ${cx + w * 0.18} ${bottomY + w * 0.16} Q ${cx + w * 0.82} ${bottomY + w * 0.22} ${cx + w * 0.62} ${bottomY} Q ${cx + w * 0.42 + bend * 0.2} ${topY + h * 0.38} ${cx + w * 0.3} ${topY} Z`
+  // 矢量露土根：从喇叭口两侧平滑爬出，泥土表面可见（4 条，圆头曲线——干净矢量风）
+  const rootW = Math.max(w * 0.3, 3)
+  const roots = [
+    { dir: -1, len: 1.9, dy: 8, bend: 0.5 },
+    { dir: -1, len: 1.2, dy: 3, bend: 0.3 },
+    { dir: 1, len: 1.9, dy: 8, bend: 0.5 },
+    { dir: 1, len: 1.2, dy: 3, bend: 0.3 },
+  ]
+  const rootPaths = roots.map((r, i) => {
+    const startX = cx + r.dir * w * 0.6
+    const startY = bottomY + w * 0.08
+    const endX = cx + r.dir * w * r.len
+    const endY = bottomY + r.dy + (i % 2) * 3
+    const ctrlX = cx + r.dir * w * r.len * 0.5
+    const ctrlY = bottomY - 1 + r.bend * 5
+    return `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="${trunkColor}" stroke-width="${i < 2 ? rootW : rootW * 0.75}" stroke-linecap="round" />`
+  })
   return [
     `<path d="${body}" fill="${trunkColor}" stroke="${dark}" stroke-width="1" />`,
+    ...rootPaths,
   ]
 }
 
