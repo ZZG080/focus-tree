@@ -85,7 +85,7 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
   if (len <= 2) return ''
   const parts: string[] = []
   const anchorW = Math.max(trunkW * 0.6, 10)
-  // 主根：7 条向两侧+下方舒展（角度更广，更舒展）
+  // 主根：7 条向两侧+下方舒展（两段式——近干粗段 + 延伸细段，带根瘤节点，更真实）
   const mainRoots = [
     { angle: -72, spread: 1.0, len: 1.0, side: -1 },
     { angle: -48, spread: 0.85, len: 0.95, side: -1 },
@@ -99,13 +99,24 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
     const rad = (r.angle * Math.PI) / 180
     const startX = cx + r.side * anchorW * 0.55
     const startY = baseY
+    // 中段（粗细过渡点）
+    const midX = startX + Math.sin(rad) * len * r.spread * 0.55
+    const midY = startY + Math.cos(rad) * len * r.len * 0.48
     const endX = cx + Math.sin(rad) * len * r.spread + r.side * anchorW * 0.15
     const endY = startY + Math.cos(rad) * len * r.len
     const ctrlX = startX + Math.sin(rad) * len * r.spread * 0.5 + Math.cos(rad) * 6
     const ctrlY = startY + Math.cos(rad) * len * r.len * 0.45 + 3
-    // 提亮颜色：深棕 #5d3a1e（比泥土深很多，清晰可见）
+    // 粗段（近干，颜色最深）
     parts.push(
-      `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="#5d3a1e" stroke-width="3.5" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" opacity="0.9" />`
+      `<path d="M ${startX} ${startY} Q ${midX - Math.sin(rad) * 4} ${midY - 2} ${midX} ${midY}" fill="none" stroke="#5d3a1e" stroke-width="4.2" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" opacity="0.95" />`
+    )
+    // 细段（延伸，颜色提亮渐变感）
+    parts.push(
+      `<path d="M ${midX} ${midY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="#6a4522" stroke-width="2.6" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" opacity="0.9" />`
+    )
+    // 根瘤节点（根系关节，真实感）
+    parts.push(
+      `<ellipse cx="${midX.toFixed(1)}" cy="${midY.toFixed(1)}" rx="2.6" ry="1.9" fill="#4a2c14" opacity="0.85" />`
     )
     // 侧根须：中段分叉
     if (t > 0.4 && r.spread > 0.6) {
@@ -163,9 +174,23 @@ export function buildTrunk(cx: number, bottomY: number, topY: number, w: number,
     const ctrlY = bottomY - 1 + r.bend * 5
     return `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="${trunkColor}" stroke-width="${i < 2 ? rootW : rootW * 0.75}" stroke-linecap="round" />`
   })
+  // 露土根分叉：前 2 条主根各伸一根小须（细节更丰富）
+  const rootForkPaths = roots.slice(0, 2).map((r, i) => {
+    const fx = cx + r.dir * w * 1.15
+    const fy = bottomY + r.dy * 0.5 + (i % 2) * 3
+    const fEndX = cx + r.dir * w * (r.len + 0.35)
+    const fEndY = bottomY + r.dy + 10 + (i % 2) * 3
+    return `<path d="M ${fx.toFixed(1)} ${fy.toFixed(1)} Q ${fx + r.dir * 4} ${fy + 6} ${fEndX.toFixed(1)} ${fEndY.toFixed(1)}" fill="none" stroke="${trunkColor}" stroke-width="${rootW * 0.6}" stroke-linecap="round" opacity="0.85" />`
+  })
+  // 柔和竖向纹理（干净矢量高光：两侧浅色条，低透明度）
+  const texture1 = `<path d="M ${cx - w * 0.13} ${topY + h * 0.05} Q ${cx - w * 0.17} ${topY + h * 0.45} ${cx - w * 0.2} ${bottomY - w * 0.12}" fill="none" stroke="#ffffff" stroke-width="1.3" opacity="0.14" stroke-linecap="round" />`
+  const texture2 = `<path d="M ${cx + w * 0.11} ${topY + h * 0.08} Q ${cx + w * 0.14} ${topY + h * 0.5} ${cx + w * 0.17} ${bottomY - w * 0.1}" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.11" stroke-linecap="round" />`
   return [
     `<path d="${body}" fill="${trunkColor}" stroke="${dark}" stroke-width="1" />`,
+    texture1,
+    texture2,
     ...rootPaths,
+    ...rootForkPaths,
   ]
 }
 
