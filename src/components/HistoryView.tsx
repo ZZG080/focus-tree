@@ -51,6 +51,9 @@ export function HistoryView({ onBack }: HistoryViewProps) {
 
   const stats = useMemo(() => {
     const totalTrees = records.reduce((sum, r) => sum + (r.treeCount ?? 1), 0)
+    const witherTrees = records
+      .filter((r) => !r.completed)
+      .reduce((sum, r) => sum + (r.treeCount ?? 1), 0)
     const totalMinutes = records.reduce((sum, r) => sum + r.actualMinutes, 0)
     const completedCount = records.filter((r) => r.completed).length
     // 解锁计算：已完成次数 + 累计分钟
@@ -64,7 +67,7 @@ export function HistoryView({ onBack }: HistoryViewProps) {
         (c.totalMinutes !== undefined && totalMinutes >= c.totalMinutes)
       if (pass) unlockedIds.add(s.id)
     }
-    return { totalTrees, totalMinutes, completedCount, sessions: records.length, unlockedIds }
+    return { totalTrees, witherTrees, totalMinutes, completedCount, sessions: records.length, unlockedIds }
   }, [records])
 
   const handleClear = () => {
@@ -87,19 +90,31 @@ export function HistoryView({ onBack }: HistoryViewProps) {
         <button className="ghost-btn" onClick={onBack}>← 返回</button>
       </div>
 
-      {/* 森林总览 */}
+      {/* 森林总览（canopy 按真实树种/枯树显示，与种下的树一致） */}
       <div className="forest-banner">
         <div className="forest-canopy">
-          {Array.from({ length: Math.min(stats.totalTrees, 40) }).map((_, i) => (
-            <span key={i} className={`canopy-tree ${i % 3 === 0 ? 'big' : i % 3 === 1 ? 'mid' : 'small'}`}>
-              🌳
-            </span>
-          ))}
+          {records
+            .slice()
+            .reverse()
+            .flatMap((r) =>
+              Array.from({ length: Math.min(r.treeCount ?? 1, 12) }).map(() =>
+                r.completed ? speciesEmoji(r.speciesId) : '🪵'
+              )
+            )
+            .slice(0, 40)
+            .map((emoji, i) => (
+              <span key={i} className={`canopy-tree ${i % 3 === 0 ? 'big' : i % 3 === 1 ? 'mid' : 'small'} ${emoji === '🪵' ? 'wither-canopy' : ''}`}>
+                {emoji}
+              </span>
+            ))}
           {stats.totalTrees === 0 && <span className="canopy-empty">🌱</span>}
         </div>
-        <div className="forest-count" title={`累计种下 ${stats.totalTrees} 棵树`}>
+        <div className="forest-count" title={`累计种下 ${stats.totalTrees} 棵树（其中枯树 ${stats.witherTrees} 棵，完成专注可复苏）`}>
           <span className="count-num">{stats.totalTrees}</span>
           <span className="count-label">已种树总数</span>
+          {stats.witherTrees > 0 && (
+            <span className="count-wither">🪵 枯树 {stats.witherTrees}</span>
+          )}
         </div>
       </div>
 
