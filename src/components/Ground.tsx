@@ -78,11 +78,11 @@ export const Ground = memo(function Ground({
     <div className={`ground ${isSnowy ? 'snowy' : ''}`}>
       <svg className="ground-svg" viewBox="0 0 1000 120" preserveAspectRatio="xMidYMax slice" aria-hidden>
         <defs>
-          {/* 泥土渐变 */}
+          {/* 泥土渐变（上浅下深，立体层次） */}
           <linearGradient id="dirtGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={dirtColor} />
             <stop offset="55%" stopColor={dirtColor} />
-            <stop offset="100%" stopColor={dirtColor} />
+            <stop offset="100%" stopColor="#8a5a2c" />
           </linearGradient>
           {/* 草地渐变 */}
           <linearGradient id="grassGrad" x1="0" y1="0" x2="0" y2="1">
@@ -160,6 +160,20 @@ export const Ground = memo(function Ground({
             <path d="M 760 28 q 4 -14 6 -19 q 5 6 4 14 z" />
             <path d="M 840 30 q -4 -13 -2 -19 q 6 5 5 14 z" />
             <path d="M 920 28 q 3 -11 5 -15 q 5 4 4 11 z" />
+            {/* 补密草叶（填空隙，草地更丰茂） */}
+            <path d="M 30 28 q 3 -12 5 -17 q 5 5 4 12 z" />
+            <path d="M 105 30 q -5 -13 -3 -19 q 6 6 5 14 z" />
+            <path d="M 165 26 q 3 -11 5 -15 q 5 4 4 11 z" />
+            <path d="M 235 30 q -4 -14 -2 -20 q 6 6 5 15 z" />
+            <path d="M 310 28 q 4 -12 6 -16 q 5 5 4 12 z" />
+            <path d="M 385 30 q -3 -13 -1 -18 q 5 5 4 13 z" />
+            <path d="M 465 28 q 3 -12 5 -16 q 5 5 4 12 z" />
+            <path d="M 545 30 q -4 -13 -2 -18 q 6 5 5 13 z" />
+            <path d="M 630 26 q 4 -12 6 -17 q 5 5 4 13 z" />
+            <path d="M 715 30 q -3 -13 -1 -19 q 5 6 4 14 z" />
+            <path d="M 795 28 q 4 -12 6 -16 q 5 5 4 12 z" />
+            <path d="M 870 30 q -4 -14 -2 -20 q 6 6 5 15 z" />
+            <path d="M 950 28 q 3 -11 5 -15 q 5 4 4 11 z" />
           </g>
           <g fill="#6ab85a" opacity="0.8">
             <path d="M 95 28 q 3 -12 5 -17 q 5 5 4 13 z" />
@@ -174,6 +188,13 @@ export const Ground = memo(function Ground({
             <path d="M 880 30 q -4 -13 -2 -18 q 6 5 5 13 z" />
             <path d="M 960 28 q 3 -11 5 -15 q 5 4 4 11 z" />
           </g>
+        </g>
+        {/* 远景小野花（固定点缀，低透明度——草地更生动） */}
+        <g opacity="0.55">
+          <Flower cx={70} cy={34} scale={0.5} color="#f0c8a0" />
+          <Flower cx={420} cy={36} scale={0.55} color="#e8b8d0" />
+          <Flower cx={700} cy={33} scale={0.5} color="#f7e0a0" />
+          <Flower cx={905} cy={36} scale={0.45} color="#f0c8a0" />
         </g>
         {/* 草地与泥土交界线（柔和过渡） */}
         <path
