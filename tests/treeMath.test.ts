@@ -80,15 +80,16 @@ describe('buildTrunk 树干 SVG 生成', () => {
     expect(buildTrunk(500, TRUNK_BASE, 400, 1, '#8a5a34')).toEqual([])
   })
 
-  it('V10.2 极简矢量干：纯色圆润直干（无纹理/无土丘/无露土根——放弃手绘）', () => {
+  it('V10.3 矢量卡通干：纯色干 + 喇叭口 + 4 条可见露土根（根茎干连贯）', () => {
     const parts = buildTrunk(500, TRUNK_BASE, 300, 18, '#8a5a34')
     const svg = parts.join('')
-    expect(parts.length).toBe(1) // 仅主体
+    expect(parts.length).toBe(5) // 主体 + 4 条露土根
     expect(svg).toContain('fill="#8a5a34"') // 树干色
     expect(svg).toContain(' Z') // 闭合形状
-    // 手绘元素全部移除
+    // 矢量露土根：4 条圆头曲线（泥土表面可见）
+    expect(svg.match(/stroke-linecap="round"/g)?.length ?? 0).toBe(4)
+    // 手绘元素保持移除
     expect(svg).not.toContain('#a9713d') // 无土丘
-    expect(svg).not.toContain('stroke-linecap="round"') // 无露土根
     expect(svg).not.toContain('tree-grow-stroke') // 无描边绘制动画
   })
 })
