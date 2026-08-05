@@ -12,3 +12,4 @@ dist/
 .idea/
 
 .vercel
+.check/ 已忽略
