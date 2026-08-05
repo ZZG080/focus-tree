@@ -86,6 +86,8 @@ export interface PlantedTree {
   variant?: 'golden'
   /** 树种 id（连携效应判断连续同种） */
   speciesId?: string
+  /** 枯树：提前结束种下的树，后续完成专注可 1:1 复苏替代 */
+  wither?: boolean
 }
 
 /** 会话快照（用于刷新后断点恢复） */
