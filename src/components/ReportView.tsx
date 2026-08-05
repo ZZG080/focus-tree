@@ -36,6 +36,7 @@ export function ReportView({ onBack }: ReportViewProps) {
   return (
     <div className="report-view">
       <div className="history-header">
+        <div className="eyebrow">REPORT · 周报</div>
         <h1>📈 周报</h1>
         <button className="ghost-btn" onClick={onBack}>← 返回</button>
       </div>
