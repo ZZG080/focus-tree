@@ -171,7 +171,7 @@ export const TreeLayers = memo(function TreeLayers({
   wither = false,
   birthWeather,
   variant,
-  handDrawn = false,
+  handDrawn: _handDrawn = false,
   shadowDir = 0.5,
   paused = false,
 }: TreeLayersProps) {
@@ -228,24 +228,14 @@ export const TreeLayers = memo(function TreeLayers({
         filter: filterStyle,
       }}
     >
-      {/* 树枝分叉：描边绘制动画（stroke-dashoffset 随 totalProgress 展开）+ 手绘纸纹滤镜 */}
+      {/* 树枝分叉：V10 矢量树无外露树枝（buildBranches 恒空，保留占位） */}
       {branchesHtml && (
-        <g
-          className="tree-grow-stroke"
-          style={growStrokeStyle(effGrowth.totalProgress, staticTree)}
-          filter={handDrawn ? 'url(#rough-paper)' : undefined}
-          dangerouslySetInnerHTML={{ __html: branchesHtml }}
-        />
+        <g dangerouslySetInnerHTML={{ __html: branchesHtml }} />
       )}
 
-      {/* 树干/茎（底部深入泥土，与根系连接；手绘纸纹滤镜） */}
+      {/* 树干/茎（底部深入泥土，与根系连接；纯色矢量——放弃手绘滤镜与描边绘制） */}
       {trunkHtml && (
-        <g
-          className="tree-grow-stroke"
-          style={growStrokeStyle(effGrowth.totalProgress, staticTree)}
-          filter={handDrawn ? 'url(#rough-paper)' : undefined}
-          dangerouslySetInnerHTML={{ __html: trunkHtml }}
-        />
+        <g dangerouslySetInnerHTML={{ __html: trunkHtml }} />
       )}
 
       {/* 树冠（按树种形状 + 季节配色 + 枯树形态；叶片渐显弹出动画；悬停时轻微摇摆） */}
@@ -253,7 +243,6 @@ export const TreeLayers = memo(function TreeLayers({
         <g
           className="crown-grow tree-crown-sway"
           style={{ transformOrigin: `${cx}px ${TRUNK_BASE}px` }}
-          filter={handDrawn ? 'url(#rough-paper)' : undefined}
           dangerouslySetInnerHTML={{ __html: crownHtml }}
         />
       )}
