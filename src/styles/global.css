@@ -2109,6 +2109,28 @@ body.high-contrast .growth-option.active {
   justify-content: center;
 }
 
+/* ---- 枯树机制（游戏化惩罚）---- */
+.wither-pool-hint {
+  font-size: 12px;
+  color: #e8b4a0;
+  background: rgba(153, 50, 40, 0.22);
+  border: 1px solid rgba(240, 196, 189, 0.25);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin: 0 auto 10px;
+  max-width: 340px;
+  text-align: center;
+}
+.wither-result {
+  font-size: 13px;
+  color: #e8b4a0;
+  margin-top: 6px;
+}
+.map-cell.wither-cell {
+  opacity: 0.65;
+  filter: grayscale(0.7);
+}
+
 /* ---- 手册页布局 ---- */
 .help-view {
   max-width: 860px;
