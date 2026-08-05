@@ -1,4 +1,4 @@
-// 启动加载页：Logo 动画（种子破土成树）+ 简化版快速上手速览
+// 启动加载页：Logo 动画（种子破土成树，自绘圆冠小树与专注场景同风格）+ 简化版快速上手速览
 import { useEffect, useState } from 'react'
 
 interface SplashScreenProps {
@@ -12,6 +12,64 @@ const QUICK_TIPS = [
   { icon: '🌳', text: '长成大树，自动种下一棵' },
   { icon: '📖', text: '在「森林」见证你的成长' },
 ]
+
+/** 自绘成长小树：种子 → 芽 → 圆冠树（根→茎→干→冠 连贯，与专注场景同风格） */
+function GrowthTree({ stage }: { stage: number }) {
+  const showRoots = stage >= 1
+  const showSprout = stage >= 1
+  const showCrown = stage >= 2
+  const grown = stage >= 3
+  return (
+    <svg className="splash-tree-svg" viewBox="0 0 200 170" aria-hidden>
+      {/* 地面 */}
+      <ellipse cx="100" cy="150" rx="86" ry="12" fill="#2d2a26" opacity="0.9" />
+      <ellipse cx="100" cy="147" rx="78" ry="8" fill="#3a362f" />
+      {/* 种子（阶段 0） */}
+      {!showSprout && (
+        <g className="splash-seed">
+          <ellipse cx="100" cy="146" rx="7" ry="9" fill="#7a4a2a" stroke="#5a3420" strokeWidth="1" />
+          <path d="M 96 143 Q 100 147 104 143" fill="none" stroke="#5a3420" strokeWidth="1" opacity="0.7" />
+        </g>
+      )}
+      {/* 根系：从茎底部向两侧舒展（根茎连贯） */}
+      {showRoots && (
+        <g className="splash-roots" stroke="#7a4a2a" strokeWidth="2" strokeLinecap="round" fill="none">
+          <path d="M 100 146 Q 88 140 80 148" />
+          <path d="M 100 146 Q 112 140 121 147" />
+          <path d="M 100 146 Q 94 152 90 158" />
+          <path d="M 100 146 Q 106 152 110 157" />
+        </g>
+      )}
+      {/* 茎 */}
+      {showSprout && (
+        <g className="splash-stem" stroke="#7a5a34" strokeWidth="4" strokeLinecap="round" fill="none">
+          <path d="M 100 146 Q 99 120 100 98" />
+        </g>
+      )}
+      {/* 芽（阶段 1）：两片小叶 */}
+      {showSprout && !showCrown && (
+        <g className="splash-sprout">
+          <path d="M 100 100 Q 88 90 84 80 Q 96 84 100 100 Z" fill="#6da05a" />
+          <path d="M 100 100 Q 112 90 116 80 Q 104 84 100 100 Z" fill="#5d8f4c" />
+        </g>
+      )}
+      {/* 圆冠（阶段 2+）：主圆 + 侧圆（🌳 观感），grown 时加高光 */}
+      {showCrown && (
+        <g className="splash-crown">
+          <ellipse cx="100" cy="74" rx="34" ry="30" fill={grown ? '#57b95a' : '#4caf50'} stroke="#3e8e41" strokeWidth="1.5" />
+          <ellipse cx="76" cy="84" rx="17" ry="14" fill="#57b95a" stroke="#3e8e41" strokeWidth="1.2" />
+          <ellipse cx="125" cy="83" rx="18" ry="15" fill="#5fbf62" stroke="#3e8e41" strokeWidth="1.2" />
+          {grown && (
+            <>
+              <ellipse cx="90" cy="62" rx="9" ry="7" fill="#8fd07c" opacity="0.8" />
+              <ellipse cx="114" cy="66" rx="7" ry="5.5" fill="#8fd07c" opacity="0.7" />
+            </>
+          )}
+        </g>
+      )}
+    </svg>
+  )
+}
 
 export function SplashScreen({ onDone }: SplashScreenProps) {
   const [stage, setStage] = useState(0) // 0=种子 1=发芽 2=小树 3=完成
@@ -30,12 +88,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
   return (
     <div className="splash-screen">
       <div className="splash-logo">
-        {/* 动画场景：种子 → 芽 → 树 */}
+        {/* 动画场景：种子 → 芽 → 圆冠树 */}
         <div className={`splash-stage stage-${stage}`}>
-          {stage === 0 && <div className="splash-seed">🌰</div>}
-          {stage >= 1 && <div className="splash-sprout">🌱</div>}
-          {stage >= 2 && <div className="splash-tree">🌳</div>}
-          <div className="splash-ground" />
+          <GrowthTree stage={stage} />
         </div>
         <h1 className="splash-title">Focus Tree</h1>
         <p className="splash-subtitle">每一次专注，种下一片森林</p>
