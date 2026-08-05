@@ -1,11 +1,54 @@
 {
   "name": "FocusTree",
   "type": "web-app",
-  "goal": "把每次专注时间可视化为种一棵树，随真实时间成长，支持 AI 鼓励语与专注记录",
+  "goal": "把每次专注时间可视化为种一棵树，随真实时间成长，支持天气/季节/场景/挑战模式/AI 鼓励语与专注记录",
   "status": "building",
   "technology": "React 18.3 + Vite 6 + TypeScript + CSS",
-  "current_phase": "V3 迭代完成：生长周期可配置 + 真实粒子效果 + 视觉升级",
-  "next_task": "用户实测反馈 V3",
-  "bugs": 0,
-  "deployment": "not_deployed"
+  "current_phase": "V9 静谧夜林·发光手绘（本地完成，线上待部署）",
+  "version": "V9",
+  "updated_at": "2026-08-04 21:00",
+  "local_build": "dist/assets/index-BHrbUWtR.js + index-C1-JUIh_.css（35/35 测试通过，50 modules）",
+  "git_head": "095f593 fix: 树不生长（Worker 链路失效）+ 树干树冠分离几何加固",
+  "git_chain_today": ["095f593", "36e89a3", "f777900", "1e380b9", "ec03751"],
+  "github_synced": true,
+  "deployment": {
+    "url": "https://focus-tree-kohl.vercel.app/",
+    "status": "线上仍是 V8 旧版（index-DehwFGeQ.js），V9 待部署",
+    "blocker": "Vercel Hobby 配额 100 部署/24h 耗尽（今早上传风暴烧光），自动恢复中",
+    "watchdog": "cron job 4cc1467fdf9a（FocusTree 自动部署看门狗，每 30 分钟）跑 scripts/deploy-when-quota.sh，配额恢复后自动部署并验证线上哈希；成功才有输出",
+    "scripts": "scripts/deploy-when-quota.sh（项目内，单一事实来源）→ %LOCALAPPDATA%/hermes/scripts/focus-tree-deploy.sh（cron 转发器）",
+    "vercel_quota_note": "配额为滚动窗口，CyberOutpost 20:00 已恢复过一次；FocusTree 20:30+ 仍受限，预计 24h 后（8-5 晚）完全恢复"
+  },
+  "v9_features": {
+    "视觉": "深色夜林（radial-gradient #1e293b→#0f172a）+ 玻璃拟态卡片 + 月亮（随 sunProgress 移动）+ 星尘粒子层（42 颗）+ rough-paper 手绘滤镜（main.tsx 全局定义）+ 树干/树枝描边生长动画（pathLength=100 + stroke-dashoffset 同步 totalProgress）+ 生长树呼吸发光 + 弹性缓动 cubic-bezier(0.34,1.56,0.64,1)",
+    "游戏化": "挑战模式（暴风雨 storm：生长 0.6x + 完成双倍树数，设置页开关）+ 连携效应（连续 3 棵同种树 → 蘑菇/小花丛，Ground companions）+ 森林地图（HistoryView 2D 网格）+ 系统通知（树长成 Notification API）",
+    "物理": "windStrength 全局风力（正弦+阵风，FocusView rAF）+ 落叶/雨幕水平偏移（--wind CSS 变量）",
+    "工程": "IndexedDB 存储迁移（records 双写 IDB+localStorage，getRecordsAsync）+ PWA（manifest.webmanifest + sw.js + icon.svg，main.tsx 注册）+ 高对比度模式（body.high-contrast）+ rAF 渲染节流（100ms 阈值，useFocusTimer）+ CSS containment（.sky/.ground/.tree-svg）",
+    "手册": "HelpView 完整手册（14 章节，导航 📘）+ SplashScreen 启动页 4 条简化速览 + Onboarding 更新"
+  },
+  "critical_fixes_today": [
+    "36e89a3: dev 模式专注崩溃修复——useDebounce.ts 的 useDebouncedWindowSize 在 useEffect 内调用 useDebouncedCallback（含 useRef）违反 Hooks 规则；开发构建必崩、生产构建静默；修复=回调移组件顶层",
+    "095f593: 树不生长——V9 Worker 链路（growthWorker.ts）dev 模式消息不稳定导致 growth 卡死；已恢复 useMemo 同步计算（computeGrowth 是 O(1) 纯函数，Worker 无收益，src/worker/growthWorker.ts 保留但不再使用）",
+    "095f593: 树干树冠分离——crownY 改用实际渲染半径 effCrownR 计算（系数 0.3，底部深入树干顶 0.52r）；修复 wither 枯树悬浮（6px→33px 重叠）；完整态重叠 61px"
+  ],
+  "next_tasks": [
+    "1. Vercel 配额恢复后确认 V9 上线（看门狗自动，可 cronjob list 查 4cc1467fdf9a 状态；或手动 bash scripts/deploy-when-quota.sh）",
+    "2. 上线后验收：线上哈希 = 本地 index-BHrbUWtR.js（curl 线上 index.html 比对）",
+    "3. 可选：用户实测新功能（挑战模式/森林地图/连携/风力/PWA 安装/高对比度），收集反馈",
+    "4. 可选：清理 tasks.json/requirements.md（V1/V2 旧清单，已过时）",
+    "5. 备注：src/worker/growthWorker.ts 已弃用（勿重新启用，除非解决 dev 模式消息链路）；SVG title/desc 无障碍按用户指令忽略（夜林重构明确 Ignore Accessibility）"
+  ],
+  "dev_environment": {
+    "dev_server": "npm run dev（Vite 端口 5199，开机后需重启）",
+    "verify": "npx tsc -b && npx vitest run && npm run build",
+    "github_upload": "python scripts/upload_update.py \"$TOKEN\" <files>（TOKEN 从 git remote get-url origin 提取）",
+    "proxy": "外网一律 curl -x http://127.0.0.1:7897",
+    "selenium_test": "uv run --with selenium python <script>（maoyan-ticket-helper venv 已不在桌面，改用 uv）"
+  },
+  "known_issues": [
+    "Vercel 配额滚动恢复中（见 deployment）",
+    "Engineering Daily Check cron（78748abf0617）今日 error——与 FocusTree 无关（可能是 CyberOutpost 转发器路径问题，已修 update-vercel.sh 但 Daily Check 是 LLM 任务，明天 9:00 会重跑）",
+    "本地 dev server 关机后需重启"
+  ],
+  "bugs": 0
 }
