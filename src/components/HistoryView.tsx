@@ -82,6 +82,7 @@ export function HistoryView({ onBack }: HistoryViewProps) {
   return (
     <div className="history-view">
       <div className="history-header">
+        <div className="eyebrow">FOREST · 森林</div>
         <h1>📖 我的森林</h1>
         <button className="ghost-btn" onClick={onBack}>← 返回</button>
       </div>
