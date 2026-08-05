@@ -17,6 +17,11 @@ export function clamp(v: number, min = 0, max = 1): number {
   return Math.min(max, Math.max(min, v))
 }
 
+/** 小数部分（确定性伪随机辅助：fract(sin(i * a) * b) 生成 0~1 稳定值） */
+export function fract(x: number): number {
+  return x - Math.floor(x)
+}
+
 /** 缓动：让生长更自然 */
 export function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3)
@@ -41,14 +46,15 @@ export function computeTreeParams(growth: GrowthState) {
   if (t > 0.03) rootT = easeInOut(clamp((t - 0.03) / 0.25))
   const rootLen = rootT * 110 // 舒展半径加大到 110px
 
-  // 主干：0.15 破土，0.17~0.28 快速伸出，之后长高到 280
+  // 主干：0.15 破土，0.17~0.28 快速伸出，之后长高到 160（卡通树比例：矮胖短干，
+  // 树干高 ≈ 树冠直径 0.68 倍——参考启动页树 冠:干 ≈ 1.4:1 的圆润观感）
   let trunkH = 0
   let trunkW = 0
   if (t > 0.15) {
     const stemT = easeOut(clamp((t - 0.15) / 0.13))
     const growT = easeOut(clamp((t - 0.28) / 0.72))
-    trunkH = stemT * 70 + growT * 215
-    trunkW = 5 + stemT * 4 + growT * 13
+    trunkH = stemT * 55 + growT * 105
+    trunkW = 6 + stemT * 6 + growT * 18
   }
 
   // 树枝分叉：大树阶段出现（t>0.45）
@@ -128,83 +134,39 @@ export function buildRoots(cx: number, baseY: number, len: number, t: number, tr
   return parts.join('')
 }
 
-/** 树干：带树皮纹理与轻微弯曲，基部堆土丘 + 露土根爬出（"种在土里"的视觉）
+/** 树干：V10.2 极简矢量卡通干——纯色圆润直干（上窄下宽）+ 底部喇叭口与根融合
+ * 放弃手绘元素：无树皮纹理线、无树干节、无土丘、无露土根（根在泥土下由 buildRoots 呈现）
  * 返回 SVG 片段数组
  */
 export function buildTrunk(cx: number, bottomY: number, topY: number, w: number, trunkColor: string): string[] {
   if (w <= 2) return []
   const h = bottomY - topY
-  const bend = w * 0.35 // 轻微 S 弯
+  const bend = w * 0.2 // 轻微 S 弯
   const dark = trunkColor === '#8a5a34' ? '#6f4526' : '#5a3a24'
-  // 树干主体（上窄下宽，手绘自然）
-  const body = `M ${cx - w * 0.55} ${bottomY} Q ${cx - w * 0.5 - bend * 0.2} ${topY + h * 0.35} ${cx - w * 0.32} ${topY} L ${cx + w * 0.32} ${topY} Q ${cx + w * 0.5 + bend * 0.2} ${topY + h * 0.35} ${cx + w * 0.55} ${bottomY} Z`
-  // 树皮纹理线（2 条竖纹）
-  const texture1 = `M ${cx - w * 0.2} ${bottomY - 6} Q ${cx - w * 0.15} ${topY + h * 0.4} ${cx - w * 0.1} ${topY + 3}`
-  const texture2 = `M ${cx + w * 0.18} ${bottomY - 4} Q ${cx + w * 0.12} ${topY + h * 0.5} ${cx + w * 0.06} ${topY + 2}`
-  // 树干节（2 个）
-  const knot1 = `<ellipse cx="${cx - w * 0.3}" cy="${bottomY - h * 0.25}" rx="${w * 0.09}" ry="${w * 0.06}" fill="${dark}" opacity="0.5" />`
-  const knot2 = `<ellipse cx="${cx + w * 0.28}" cy="${bottomY - h * 0.55}" rx="${w * 0.08}" ry="${w * 0.05}" fill="${dark}" opacity="0.4" />`
-  // 基部土丘：树干种在土里的堆土（泥土色，压在树根与树干之间）
-  const moundW = w * 1.6
-  const mound = `<ellipse cx="${cx}" cy="${bottomY - 2}" rx="${moundW}" ry="${w * 0.5}" fill="#a9713d" stroke="#8a5a2c" stroke-width="1" opacity="0.9" />`
-  // 露土根：从土丘下方向两侧爬出，在泥土表面可见（4 条，更长更明显）
-  const rootW = Math.max(w * 0.38, 3.5)
-  const roots = [
-    { dir: -1, len: 2.1, dy: 10, bend: 0.7 },
-    { dir: -1, len: 1.4, dy: 4, bend: 0.4 },
-    { dir: 1, len: 2.1, dy: 10, bend: 0.7 },
-    { dir: 1, len: 1.4, dy: 4, bend: 0.4 },
-  ]
-  const rootPaths = roots.map((r, i) => {
-    const startX = cx + r.dir * w * 0.5
-    const startY = bottomY - 4
-    const endX = cx + r.dir * w * r.len
-    const endY = bottomY + r.dy + (i % 2) * 3
-    const ctrlX = cx + r.dir * w * r.len * 0.55
-    const ctrlY = bottomY - 2 + r.bend * 6
-    return `<path d="M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}" fill="none" stroke="${trunkColor}" stroke-width="${i < 2 ? rootW : rootW * 0.75}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
-  })
+  // 主体：圆润直干，底部喇叭口展开 0.8w（与根系起点融合，根茎干连贯）
+  const body = `M ${cx - w * 0.3} ${topY} Q ${cx - w * 0.42 - bend * 0.2} ${topY + h * 0.38} ${cx - w * 0.62} ${bottomY} Q ${cx - w * 0.82} ${bottomY + w * 0.22} ${cx - w * 0.18} ${bottomY + w * 0.16} L ${cx + w * 0.18} ${bottomY + w * 0.16} Q ${cx + w * 0.82} ${bottomY + w * 0.22} ${cx + w * 0.62} ${bottomY} Q ${cx + w * 0.42 + bend * 0.2} ${topY + h * 0.38} ${cx + w * 0.3} ${topY} Z`
   return [
-    `<path d="${body}" fill="${trunkColor}" stroke="${dark}" stroke-width="1.2" />`,
-    `<path d="${texture1}" fill="none" stroke="${dark}" stroke-width="1" opacity="0.4" />`,
-    `<path d="${texture2}" fill="none" stroke="${dark}" stroke-width="1" opacity="0.35" />`,
-    ...rootPaths,
-    mound,
-    knot1,
-    knot2,
+    `<path d="${body}" fill="${trunkColor}" stroke="${dark}" stroke-width="1" />`,
   ]
 }
 
-/** 树枝分叉：从主干上部向两侧伸展 */
-export function buildBranches(cx: number, topY: number, h: number, w: number, t: number): string {
-  if (t <= 0) return ''
-  const parts: string[] = []
-  const branchLen = 26 + t * 46
-  const branchW = 2.5 + t * 2.5
-  // 左枝
-  const leftY = topY + h * 0.22
-  const leftEndX = cx - branchLen
-  const leftEndY = leftY - 14 - t * 12
-  parts.push(
-    `<path d="M ${cx - w * 0.2} ${leftY} Q ${cx - branchLen * 0.5} ${leftY - 4} ${leftEndX} ${leftEndY}" fill="none" stroke="#8a5a34" stroke-width="${branchW}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
-  )
-  // 右枝
-  const rightY = topY + h * 0.32
-  const rightEndX = cx + branchLen * 1.05
-  const rightEndY = rightY - 10 - t * 10
-  parts.push(
-    `<path d="M ${cx + w * 0.2} ${rightY} Q ${cx + branchLen * 0.5} ${rightY - 6} ${rightEndX} ${rightEndY}" fill="none" stroke="#8a5a34" stroke-width="${branchW * 0.9}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
-  )
-  // 顶端小枝
-  if (t > 0.4) {
-    parts.push(
-      `<path d="M ${cx} ${topY + 4} Q ${cx + 6} ${topY - 6} ${cx + 12} ${topY - 10}" fill="none" stroke="#8a5a34" stroke-width="${branchW * 0.7}" stroke-linecap="round" pathLength="100" class="tree-grow-stroke" />`
-    )
-  }
-  return parts.join('')
+/** 树枝分叉：V10 启动页树样式——无外露树枝，树干直顶圆冠（🌳 简洁观感）。
+ * 保留函数签名兼容，直接返回空：冠与干的连接由 crownY 重叠逻辑保证
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function buildBranches(_cx: number, _topY: number, _h: number, _w: number, _t: number): string {
+  return ''
 }
 
-/** 树冠生成器（按树种形状）：云冠/花冠/枫冠/锥冠/扇冠，支持季节配色、枯树形态、天气遗产与变异 */
+/** 树冠生成器 V10.1（两层圆冠卡通造型——按用户提供的参考图：上小圆 + 下大圆堆叠，简洁明快）
+ * 各品种差异化生长动画：
+ *  - cloud（橡树）  ：下圆先膨胀 → 上圆随后弹出（两层堆叠）
+ *  - flower（樱花） ：同两层 + 花瓣点缀
+ *  - maple（枫树）  ：两层圆冠 + 掌形叶纹
+ *  - cone（松树）   ：3 层圆滑锥从下往上逐层叠加
+ *  - fan（银杏）    ：两层圆冠 + 扇叶放射纹
+ * 支持季节配色、枯树形态、天气遗产与变异
+ */
 export function buildCrownShape(
   cx: number,
   cy: number,
@@ -247,98 +209,159 @@ export function buildCrownShape(
     fruitT = 0
   }
 
-  // 底部暗色衬底（体积感）
-  parts.push(`<ellipse cx="${cx + 4}" cy="${cy + 6}" rx="${r * 0.95}" ry="${r * 0.78}" fill="${stroke}" opacity="0.85" />`)
-
   if (species.crownType === 'cone') {
-    // 松树：3 层锥形堆叠，错落有致
+    // ===== 松树：3 层圆滑锥，从下往上叠加（底部最宽先出现，顶部最后长高） =====
     const layers = [
-      { dy: -r * 0.1, w: r * 1.5, h: r * 1.15 },
-      { dy: r * 0.18, w: r * 1.25, h: r * 0.95 },
-      { dy: r * 0.42, w: r * 1.0, h: r * 0.75 },
+      { dy: r * 0.5, w: r * 1.45, h: r * 1.1, tint: side },   // 底层（最先）
+      { dy: r * 0.16, w: r * 1.12, h: r * 1.0, tint: main },  // 中层
+      { dy: -r * 0.18, w: r * 0.78, h: r * 0.9, tint: light }, // 顶层（最后）
     ]
-    for (const layer of layers) {
+    layers.forEach((layer, li) => {
+      // 用 count 表达层数进度：count 3~7 开底层，8~9 开中层，10 开顶层
+      const open = count >= 3 + li * 3
+      if (!open) return
+      const grow = Math.min(1, (count - 3 - li * 3) / 3 + 0.25) // 层内生长
+      const w2 = layer.w * (0.6 + 0.4 * grow)
+      const h2 = layer.h * (0.55 + 0.45 * grow)
       parts.push(
-        `<path d="M ${cx - layer.w} ${cy + layer.dy} Q ${cx} ${cy + layer.dy - layer.h} ${cx + layer.w} ${cy + layer.dy} Z" fill="${main}" stroke="${stroke}" stroke-width="1.5" />`
+        `<path d="M ${cx - w2} ${cy + layer.dy} Q ${cx} ${cy + layer.dy - h2} ${cx + w2} ${cy + layer.dy} Q ${cx} ${cy + layer.dy + h2 * 0.16} ${cx - w2} ${cy + layer.dy} Z" fill="${layer.tint}" stroke="${stroke}" stroke-width="1.5" />`
       )
-    }
+    })
     // 雪松高光（顶部亮线）
-    parts.push(`<path d="M ${cx - r * 0.5} ${cy - r * 0.55} Q ${cx} ${cy - r * 1.0} ${cx + r * 0.5} ${cy - r * 0.55}" fill="none" stroke="${light}" stroke-width="2" opacity="0.5" />`)
-  } else if (species.crownType === 'fan') {
-    // 银杏：扇形圆冠，水平延展
-    parts.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r * 1.1}" ry="${r * 0.72}" fill="${main}" />`)
-    // 扇叶放射纹理
-    for (let i = 0; i < 7; i++) {
-      const angle = -1.1 + i * 0.36
-      const endX = cx + Math.sin(angle) * r * 0.85
-      const endY = cy + Math.cos(angle) * r * 0.6
-      parts.push(
-        `<path d="M ${cx} ${cy} Q ${cx + Math.sin(angle) * r * 0.4} ${cy + Math.cos(angle) * r * 0.3} ${endX} ${endY}" fill="none" stroke="${light}" stroke-width="1.5" opacity="0.55" />`
-      )
+    if (count >= 9) {
+      parts.push(`<path d="M ${cx - r * 0.45} ${cy - r * 0.62} Q ${cx} ${cy - r * 1.05} ${cx + r * 0.45} ${cy - r * 0.62}" fill="none" stroke="${light}" stroke-width="2" opacity="0.5" />`)
     }
-    parts.push(`<ellipse cx="${cx - r * 0.4}" cy="${cy - r * 0.3}" rx="${r * 0.45}" ry="${r * 0.3}" fill="${side}" opacity="0.7" />`)
-    parts.push(`<ellipse cx="${cx + r * 0.4}" cy="${cy + r * 0.1}" rx="${r * 0.4}" ry="${r * 0.27}" fill="${side}" opacity="0.6" />`)
+    // 鳞片细节：每层锥面叠小椭圆鳞叶（让松树更细致）
+    const scaleN = 8 + Math.round(count * 1.5)
+    for (let i = 0; i < scaleN; i++) {
+      const u = fract(Math.sin(i * 23.7) * 43758.5453)
+      const v = fract(Math.sin(i * 47.1) * 12543.123)
+      // 沿锥面分布：越靠上越窄
+      const ty = v * 0.95
+      const coneW = r * 1.45 * (1 - ty * 0.55)
+      const lx = cx + (u - 0.5) * coneW * 1.4
+      const ly = cy + r * 0.5 - ty * r * 1.05
+      const lr = r * (0.07 + v * 0.09)
+      const tint = v > 0.6 ? light : main
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.7).toFixed(1)}" fill="${tint}" opacity="0.8" />`)
+    }
   } else if (species.crownType === 'maple') {
-    // 枫树：多团堆叠 + 星形叶尖点缀
-    const clusters = [
-      { dx: 0, dy: 0, s: 1 },
-      { dx: -r * 0.55, dy: r * 0.12, s: 0.6 },
-      { dx: r * 0.58, dy: r * 0.1, s: 0.62 },
-      { dx: -r * 0.25, dy: -r * 0.4, s: 0.55 },
-      { dx: r * 0.28, dy: -r * 0.38, s: 0.55 },
-    ]
-    for (const c of clusters) {
+    // ===== 枫树：密集叶冠（红叶层）+ 掌形纹理——干净矢量但细节丰富 =====
+    // 基底（深色打底，轮廓完整）
+    parts.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 0.88}" fill="${stroke}" opacity="0.9" />`)
+    // 密集叶片层：确定性伪随机分布（半球冠面，径向 4 色梯度）
+    const leafN = 30 + Math.round(count * 2)
+    for (let i = 0; i < leafN; i++) {
+      const u = fract(Math.sin(i * 12.9898) * 43758.5453)
+      const v = fract(Math.sin(i * 78.233) * 12543.123)
+      const ang = u * Math.PI * 2
+      const rad = 0.3 + v * 0.85
+      const lx = cx + Math.cos(ang) * r * rad
+      const ly = cy + Math.sin(ang) * r * rad * 0.55 + r * 0.22
+      const lr = r * (0.08 + v * 0.14)
+      const tint = rad > 0.82 ? light : rad > 0.55 ? main : side
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.82).toFixed(1)}" fill="${tint}" opacity="0.92" />`)
+    }
+    // 顶部亮叶（高光层）
+    for (let i = 0; i < 6; i++) {
+      const u = fract(Math.sin(i * 91.7) * 43758.5453)
+      const lx = cx + (u - 0.5) * r * 1.1
+      const ly = cy - r * (0.25 + fract(Math.sin(i * 51.3) * 43758.5453) * 0.45)
+      const lr = r * (0.09 + fract(Math.sin(i * 33.9) * 43758.5453) * 0.07)
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.8).toFixed(1)}" fill="${light}" opacity="0.8" />`)
+    }
+  } else if (species.crownType === 'fan') {
+    // ===== 银杏：密集金叶冠 + 扇叶放射纹 =====
+    parts.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r * 1.0}" ry="${r * 0.85}" fill="${stroke}" opacity="0.9" />`)
+    const leafN = 30 + Math.round(count * 2)
+    for (let i = 0; i < leafN; i++) {
+      const u = fract(Math.sin(i * 12.9898) * 43758.5453)
+      const v = fract(Math.sin(i * 78.233) * 12543.123)
+      const ang = u * Math.PI * 2
+      const rad = 0.3 + v * 0.85
+      const lx = cx + Math.cos(ang) * r * rad
+      const ly = cy + Math.sin(ang) * r * rad * 0.55 + r * 0.2
+      const lr = r * (0.08 + v * 0.13)
+      const tint = rad > 0.82 ? light : rad > 0.55 ? main : side
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.82).toFixed(1)}" fill="${tint}" opacity="0.92" />`)
+    }
+    // 扇叶放射纹理：从中心向外
+    const veinCount = Math.max(0, Math.floor((count - 3) * 1.2))
+    for (let i = 0; i < veinCount; i++) {
+      const angle = -1.15 + (i / Math.max(1, veinCount - 1)) * 2.3
+      const endX = cx + Math.sin(angle) * r * 0.92
+      const endY = cy + Math.cos(angle) * r * 0.62
       parts.push(
-        `<ellipse cx="${cx + c.dx}" cy="${cy + c.dy}" rx="${r * c.s}" ry="${r * c.s * 0.85}" fill="${c.s > 0.8 ? main : side}" stroke="${stroke}" stroke-width="1.2" />`
+        `<path d="M ${cx} ${cy} Q ${cx + Math.sin(angle) * r * 0.45} ${cy + Math.cos(angle) * r * 0.3} ${endX} ${endY}" fill="none" stroke="${light}" stroke-width="1.5" opacity="0.55" />`
       )
     }
-    // 枫叶星尖（顶部）
-    parts.push(`<path d="M ${cx} ${cy - r * 1.15} L ${cx + r * 0.16} ${cy - r * 0.75} L ${cx + r * 0.42} ${cy - r * 0.85} L ${cx + r * 0.18} ${cy - r * 0.5} Z" fill="${light}" opacity="0.8" />`)
+    // 顶部亮叶
+    for (let i = 0; i < 5; i++) {
+      const u = fract(Math.sin(i * 91.7) * 43758.5453)
+      const lx = cx + (u - 0.5) * r * 1.05
+      const ly = cy - r * (0.22 + fract(Math.sin(i * 51.3) * 43758.5453) * 0.42)
+      const lr = r * (0.09 + fract(Math.sin(i * 33.9) * 43758.5453) * 0.06)
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.8).toFixed(1)}" fill="${light}" opacity="0.8" />`)
+    }
   } else {
-    // cloud / flower：云朵状团冠（樱花更圆润蓬松）
+    // ===== cloud（橡树）/ flower（樱花）：密集叶冠——细节丰富的矢量卡通树 =====
+    // 放弃"三大圆"简约设计：基底 + 30~50 片小叶铺满冠面（径向 4 色梯度：深→中→浅→亮）
     const isFlower = species.crownType === 'flower'
-    parts.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * (isFlower ? 0.9 : 0.82)}" fill="${main}" stroke="${stroke}" stroke-width="1.2" />`)
-    const offsets = [
-      [-0.72, 0.18, 0.6],
-      [0.74, 0.16, 0.62],
-      [-0.35, -0.5, 0.52],
-      [0.38, -0.48, 0.54],
-    ]
-    for (let i = 0; i < Math.min(count - 1, offsets.length); i++) {
-      const [ox, oy, scale] = offsets[i]
-      const rr = r * scale
-      parts.push(
-        `<ellipse cx="${cx + r * ox}" cy="${cy + r * oy}" rx="${rr}" ry="${rr * (isFlower ? 0.85 : 0.8)}" fill="${side}" stroke="${stroke}" stroke-width="1" />`
-      )
+    // 基底（深色打底，保证轮廓完整 + 与树干重叠处不露缝）
+    parts.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * (isFlower ? 0.9 : 0.88)}" fill="${stroke}" opacity="0.92" />`)
+    // 中层主色叶（覆盖冠面主体）
+    const leafN = 30 + Math.round(count * 2.4)
+    for (let i = 0; i < leafN; i++) {
+      const u = fract(Math.sin(i * 12.9898) * 43758.5453)
+      const v = fract(Math.sin(i * 78.233) * 12543.123)
+      const ang = u * Math.PI * 2
+      const rad = 0.3 + v * 0.85
+      const lx = cx + Math.cos(ang) * r * rad
+      const ly = cy + Math.sin(ang) * r * rad * 0.52 + r * 0.2
+      const lr = r * (0.08 + v * 0.14)
+      const tint = rad > 0.82 ? side : main
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.85).toFixed(1)}" fill="${tint}" opacity="0.95" />`)
     }
-    // 高光
-    const lightSpots = [
-      [-0.45, -0.25, 0.3],
-      [0.3, -0.3, 0.24],
-      [0, -0.45, 0.2],
-    ]
-    for (const [ox, oy, scale] of lightSpots) {
-      const rr = r * scale
-      parts.push(`<ellipse cx="${cx + r * ox}" cy="${cy + r * oy}" rx="${rr}" ry="${rr * 0.75}" fill="${light}" opacity="0.65" />`)
+    // 顶部亮叶层（高光，6-8 片）
+    const topLeafN = 6 + Math.round(count * 0.3)
+    for (let i = 0; i < topLeafN; i++) {
+      const u = fract(Math.sin(i * 91.7) * 43758.5453)
+      const v = fract(Math.sin(i * 51.3) * 43758.5453)
+      const lx = cx + (u - 0.5) * r * 1.15
+      const ly = cy - r * (0.15 + v * 0.55)
+      const lr = r * (0.09 + fract(Math.sin(i * 33.9) * 43758.5453) * 0.08)
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.82).toFixed(1)}" fill="${light}" opacity="0.85" />`)
     }
-    // 樱花：花瓣飘点
+    // 边缘外凸小叶（让轮廓有叶片层次感，不呆板）
+    const edgeLeafN = 10
+    for (let i = 0; i < edgeLeafN; i++) {
+      const u = fract(Math.sin(i * 137.1) * 43758.5453)
+      const v = fract(Math.sin(i * 61.7) * 12543.123)
+      const ang = u * Math.PI * 2
+      const lx = cx + Math.cos(ang) * r * 1.02
+      const ly = cy + Math.sin(ang) * r * 0.62 + r * 0.18
+      const lr = r * (0.1 + v * 0.08)
+      const tint = v > 0.5 ? side : main
+      parts.push(`<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${lr.toFixed(1)}" ry="${(lr * 0.85).toFixed(1)}" fill="${tint}" opacity="0.9" />`)
+    }
+    // 樱花：花瓣飘点（花心点）
     if (isFlower && fruitT > 0) {
       for (let i = 0; i < 5; i++) {
-        const px = cx + (i - 2) * r * 0.38
-        const py = cy + r * 0.5 + (i % 2) * 6
-        parts.push(`<circle cx="${px}" cy="${py}" r="2.2" fill="#ffffff" opacity="0.7" />`)
+        const px = cx + (i - 2) * r * 0.36
+        const py = cy + r * 0.45 + (i % 2) * 6
+        parts.push(`<circle cx="${px}" cy="${py}" r="2.2" fill="#ffffff" opacity="0.75" />`)
       }
     }
   }
 
-  // 果实/花点缀（云冠橡树有果实；樱花有花心点）
+  // 果实/花点缀（圆冠橡树有果实；樱花有花心点）
   if (fruitT > 0 && count > 5 && species.hasAccent) {
     const spots = [
-      [-0.5, 0.1],
-      [0.45, -0.05],
-      [-0.1, 0.35],
-      [0.15, -0.25],
-      [-0.62, -0.1],
+      [-0.5, 0.25],
+      [0.45, 0.1],
+      [-0.1, 0.52],
+      [0.15, -0.18],
+      [-0.62, 0.0],
     ]
     const spotCount = Math.max(1, Math.round(fruitT * spots.length))
     for (let i = 0; i < spotCount; i++) {
@@ -352,10 +375,10 @@ export function buildCrownShape(
   // 天气遗产：雨天生长的树永久带露珠（亮白小点）
   if (birthWeather === 'rainy' && !wither) {
     const dewSpots = [
-      [-0.55, -0.2, 0.1],
-      [0.2, -0.4, 0.08],
-      [0.5, 0.15, 0.09],
-      [-0.15, 0.35, 0.07],
+      [-0.55, -0.1, 0.1],
+      [0.2, -0.3, 0.08],
+      [0.5, 0.25, 0.09],
+      [-0.15, 0.45, 0.07],
     ]
     for (const [ox, oy, scale] of dewSpots) {
       parts.push(
@@ -369,19 +392,19 @@ export function buildCrownShape(
     if (species.crownType === 'cone') {
       // 松树：每层顶部积雪
       const layers = [
-        { dy: -r * 0.1, w: r * 1.5, h: r * 1.15 },
-        { dy: r * 0.18, w: r * 1.25, h: r * 0.95 },
-        { dy: r * 0.42, w: r * 1.0, h: r * 0.75 },
+        { dy: r * 0.5, w: r * 1.45, h: r * 1.1 },
+        { dy: r * 0.16, w: r * 1.12, h: r * 1.0 },
+        { dy: -r * 0.18, w: r * 0.78, h: r * 0.9 },
       ]
       for (const layer of layers) {
         parts.push(
-          `<path d="M ${cx - layer.w * 0.55} ${cy + layer.dy - layer.h * 0.25} Q ${cx} ${cy + layer.dy - layer.h * 0.55} ${cx + layer.w * 0.55} ${cy + layer.dy - layer.h * 0.25} Q ${cx} ${cy + layer.dy - layer.h * 0.35} ${cx - layer.w * 0.55} ${cy + layer.dy - layer.h * 0.25} Z" fill="#ffffff" opacity="0.9" />`
+          `<path d="M ${cx - layer.w * 0.5} ${cy + layer.dy - layer.h * 0.3} Q ${cx} ${cy + layer.dy - layer.h * 0.62} ${cx + layer.w * 0.5} ${cy + layer.dy - layer.h * 0.3} Q ${cx} ${cy + layer.dy - layer.h * 0.42} ${cx - layer.w * 0.5} ${cy + layer.dy - layer.h * 0.3} Z" fill="#ffffff" opacity="0.9" />`
         )
       }
     } else {
-      // 阔叶树：树冠顶部白色雪冠
+      // 阔叶树：顶冠白色雪冠
       parts.push(
-        `<path d="M ${cx - r * 0.7} ${cy - r * 0.25} Q ${cx} ${cy - r * 0.95} ${cx + r * 0.7} ${cy - r * 0.25} Q ${cx} ${cy - r * 0.5} ${cx - r * 0.7} ${cy - r * 0.25} Z" fill="#ffffff" opacity="0.85" />`
+        `<path d="M ${cx - r * 0.5} ${cy - r * 0.66} Q ${cx} ${cy - r * 1.05} ${cx + r * 0.5} ${cy - r * 0.66} Q ${cx} ${cy - r * 0.78} ${cx - r * 0.5} ${cy - r * 0.66} Z" fill="#ffffff" opacity="0.85" />`
       )
     }
   }
