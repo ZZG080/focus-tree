@@ -114,13 +114,14 @@ export function HistoryView({ onBack }: HistoryViewProps) {
             {records.slice(0, 48).map((r, i) => {
               const n = r.treeCount ?? 1
               const isStorm = r.weather === 'storm' || r.challengeBonus
+              const isWither = !r.completed // 提前结束 → 枯树
               return (
                 <div
                   key={r.id}
-                  className={`map-cell ${i % 2 === 0 ? 'row-a' : 'row-b'} ${isStorm ? 'storm-cell' : ''}`}
-                  title={`${formatDate(r.startedAt)} · ${r.actualMinutes} 分钟 · ${n} 棵树${isStorm ? ' · ⚡挑战' : ''}`}
+                  className={`map-cell ${i % 2 === 0 ? 'row-a' : 'row-b'} ${isStorm ? 'storm-cell' : ''} ${isWither ? 'wither-cell' : ''}`}
+                  title={`${formatDate(r.startedAt)} · ${r.actualMinutes} 分钟 · ${n} 棵树${isWither ? ' · 枯树（提前结束）' : ''}${isStorm ? ' · ⚡挑战' : ''}`}
                 >
-                  <span className="map-tree">{speciesEmoji(r.speciesId)}</span>
+                  <span className="map-tree">{isWither ? '🪵' : speciesEmoji(r.speciesId)}</span>
                   {n > 1 && <span className="map-count">×{n}</span>}
                   {isStorm && <span className="map-storm">⚡</span>}
                 </div>
