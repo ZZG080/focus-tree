@@ -105,6 +105,21 @@ function idbClear(db: IDBDatabase, storeName: string): Promise<void> {
 
 // ---------- 专注记录 ----------
 
+// ---------- 枯树池（游戏化惩罚机制） ----------
+// 提前结束种下的树是枯树；后续完成专注时 1:1 复苏替代（复苏完才正常新增树）
+const WITHER_POOL_KEY = 'focus-tree:wither-pool'
+
+/** 读取待复苏枯树数 */
+export function getWitherPool(): number {
+  const v = Number(safeRead<number>(WITHER_POOL_KEY, 0))
+  return Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0
+}
+
+/** 设置待复苏枯树数 */
+export function setWitherPool(n: number): void {
+  safeWrite(WITHER_POOL_KEY, Math.max(0, Math.floor(n)))
+}
+
 /** 同步读取（localStorage 缓存——用于热路径/统计即时展示） */
 export function getRecords(): FocusRecord[] {
   return safeRead<FocusRecord[]>(KEYS.records, [])
