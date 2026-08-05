@@ -448,7 +448,7 @@ button {
 .preset-btn {
   padding: 8px 16px;
   border-radius: 999px;
-  background: #eef6ee;
+  background: rgba(30, 41, 59, 0.5);
   color: var(--text-main);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   font-size: 14px;
@@ -456,7 +456,8 @@ button {
 }
 
 .preset-btn:hover {
-  background: #e0f0e0;
+  background: rgba(51, 65, 85, 0.6);
+  border-color: rgba(74, 222, 128, 0.45);
 }
 
 .preset-btn.active {
@@ -540,7 +541,7 @@ button {
 }
 
 .link-btn:hover {
-  background: #eef6ee;
+  background: rgba(30, 41, 59, 0.5);
   color: var(--leaf-dark);
 }
 
@@ -578,7 +579,7 @@ button {
 .save-btn {
   width: 100%;
   padding: 10px;
-  background: #eef6ee;
+  background: rgba(30, 41, 59, 0.5);
   color: var(--leaf-dark);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-sm);
@@ -588,7 +589,7 @@ button {
 }
 
 .save-btn:hover {
-  background: #e0f0e0;
+  background: rgba(51, 65, 85, 0.6);
 }
 
 /* ============ 历史视图 ============ */
@@ -637,7 +638,7 @@ button {
   font-size: 13px;
   font-weight: 700;
   color: var(--leaf-dark);
-  background: #eef6ee;
+  background: rgba(30, 41, 59, 0.5);
   padding: 3px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -753,7 +754,7 @@ button {
 .ghost-btn {
   padding: 8px 16px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(30, 41, 59, 0.6);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   color: var(--text-main);
   font-size: 14px;
@@ -770,7 +771,7 @@ button {
 }
 
 .ghost-btn.danger:hover {
-  background: #fdf0ee;
+  background: rgba(153, 50, 40, 0.28);
 }
 
 .stats-row {
@@ -881,7 +882,7 @@ button {
 }
 
 .clear-btn:hover {
-  background: #fdf0ee;
+  background: rgba(153, 50, 40, 0.28);
 }
 
 /* ============ 结果视图 ============ */
@@ -1148,7 +1149,7 @@ button {
   right: 0;
   display: flex;
   justify-content: space-around;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(15, 23, 42, 0.78);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -1169,7 +1170,7 @@ button {
 }
 
 .nav-item:hover {
-  background: #eef6ee;
+  background: rgba(30, 41, 59, 0.5);
   transform: translateY(-1px);
 }
 
@@ -1322,7 +1323,7 @@ button {
 .idea-chip {
   padding: 6px 12px;
   border-radius: 999px;
-  background: #eef6ee;
+  background: rgba(30, 41, 59, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 12px;
   color: var(--text-sub);
@@ -1330,7 +1331,7 @@ button {
 }
 
 .idea-chip:hover {
-  background: #e0f0e0;
+  background: rgba(51, 65, 85, 0.6);
   color: var(--leaf-dark);
 }
 
@@ -1445,7 +1446,7 @@ button {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(15, 23, 42, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 4px 16px rgba(46, 78, 42, 0.15);
   backdrop-filter: blur(12px);
