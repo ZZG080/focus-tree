@@ -78,6 +78,7 @@ export function HelpView({ onBack }: HelpViewProps) {
   return (
     <div className="help-view">
       <div className="help-header">
+        <div className="eyebrow">GUIDE · 手册</div>
         <h1>📘 用户指导手册</h1>
         <button className="ghost-btn" onClick={onBack}>← 返回</button>
       </div>
