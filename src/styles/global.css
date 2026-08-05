@@ -2130,6 +2130,18 @@ body.high-contrast .growth-option.active {
   opacity: 0.65;
   filter: grayscale(0.7);
 }
+.count-wither {
+  font-size: 11px;
+  color: #e8b4a0;
+  background: rgba(153, 50, 40, 0.2);
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin-top: 4px;
+}
+.canopy-tree.wither-canopy {
+  opacity: 0.6;
+  filter: grayscale(0.8);
+}
 
 /* ---- 手册页布局 ---- */
 .help-view {
