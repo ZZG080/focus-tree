@@ -11,7 +11,9 @@ import {
   addRecord,
   getRecords,
   getSettings,
+  getWitherPool,
   persistUnlockedSpecies,
+  setWitherPool,
   saveSettings,
 } from '../services/storageService'
 import { generateEncouragement } from '../services/aiService'
@@ -111,13 +113,10 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
   const scene = useMemo(() => getScene(sceneId), [sceneId])
   // 手绘滤镜：桌面端启用（feTurbulence 耗 GPU，移动端关闭保性能）
   const [handDrawn] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1080px)').matches)
-  // 枯树惩罚：最近连续 N 次提前结束 → 本次的树枯萎
-  const [wither] = useState(() => {
-    const records = getRecords()
-    const recent = records.slice(0, 3)
-    const recentFail = recent.filter((r) => !r.completed).length
-    return recent.length >= 2 && recentFail >= 2
-  })
+  // 枯树池（游戏化机制）：提前结束种下枯树，后续完成专注 1:1 复苏替代，复苏完才正常新增
+  const [witherPool, setWitherPoolState] = useState(() => getWitherPool())
+  // 本次会话复苏信息（结果页展示）
+  const [reviveInfo, setReviveInfo] = useState<{ revived: number; remaining: number; isNew: boolean } | null>(null)
 
   // 本次所有种子的落点（多种子同时落下、同步长大）
   const [seedXs, setSeedXs] = useState<number[]>([])
@@ -300,16 +299,35 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
     return out
   }, [plantedTrees])
 
-  // 会话结束
+  // 会话结束（枯树机制：提前结束 → 本批树枯萎入池；完成 → 复苏替代旧枯树，复苏完才正常新增）
   const endSession = async (completed: boolean) => {
     if (finished) return
     const actualMs = timer.getActualMs()
     timer.finish()
-    // 当前批次树也计入本次专注的树数
-    let treesThisSession = batchRef.current * seedCount + seedXs.length
+    const batchTreesThisSession = batchRef.current * seedCount + seedXs.length
     // 挑战模式奖励：完整完成时双倍树数（暴风雨的回报）
     const challengeBonus = challengeMode && completed
+    let treesThisSession = batchTreesThisSession
     if (challengeBonus) treesThisSession *= 2
+    // ===== 枯树池结算 =====
+    let revived = 0
+    let remaining = getWitherPool()
+    if (!completed) {
+      // 提前结束：本批所有树枯萎 → 场景中本批变枯树 + 入池
+      const batchStart = batchRef.current * seedCount
+      setPlantedTrees((prev) =>
+        prev.map((t) => (t.index >= batchStart ? { ...t, wither: true } : t))
+      )
+      remaining = remaining + seedXs.length
+      setWitherPool(remaining)
+    } else {
+      // 完成：本批树 1:1 复苏替代池中枯树（复苏完才正常新增）
+      revived = Math.min(treesThisSession, remaining)
+      remaining = remaining - revived
+      setWitherPool(remaining)
+    }
+    setWitherPoolState(remaining)
+    setReviveInfo({ revived, remaining, isNew: completed })
     const record: FocusRecord = {
       id: `focus-${Date.now()}`,
       plannedMinutes: plannedMs / 60_000,
@@ -358,6 +376,16 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
             {finishedRecord.challengeBonus && <span className="bonus-badge">⚡ 挑战双倍奖励</span>}
           </p>
           <p className="result-msg" role="status" aria-live="polite">{encouragement}</p>
+          {reviveInfo && !reviveInfo.isNew && reviveInfo.remaining > 0 && (
+            <p className="wither-result">🌫️ 种下了 {seedXs.length} 棵枯树，还有 {reviveInfo.remaining} 棵待复苏</p>
+          )}
+          {reviveInfo && reviveInfo.isNew && reviveInfo.revived > 0 && (
+            <p className="wither-result">
+              {reviveInfo.remaining > 0
+                ? `⚡ 复苏了 ${reviveInfo.revived} 棵枯树，还有 ${reviveInfo.remaining} 棵待复苏`
+                : `🎉 复苏了 ${reviveInfo.revived} 棵枯树，森林重获新生！`}
+            </p>
+          )}
           <div className="result-actions">
             <button className="start-btn" onClick={onExit}>🌱 返回，再看一棵</button>
           </div>
@@ -439,14 +467,15 @@ export function FocusView({ initialMinutes, onExit }: FocusViewProps) {
               layerOrder={0}
               speciesId={speciesId}
               season={season}
-              wither={wither}
               paused={paused}
             />
           ))}
         </svg>
-        {/* 枯树提示 */}
-        {wither && !finished && (
-          <div className="wither-toast" role="status" aria-live="polite">🌫️ 连续提前结束，这棵树枯萎了…完成一次专注让它恢复生机</div>
+        {/* 枯树池提示（游戏化机制：提前结束种枯树，完成专注复苏） */}
+        {witherPool > 0 && !finished && (
+          <div className="wither-toast" role="status" aria-live="polite">
+            🌫️ 有 {witherPool} 棵枯树待复苏——完成一次专注，种下的树将先复苏它们
+          </div>
         )}
         {/* 顶部计时条 */}
         <div className="timer-bar">
