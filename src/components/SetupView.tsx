@@ -80,6 +80,7 @@ export function SetupView({ onStart, onShowHistory }: SetupViewProps) {
   return (
     <div className="setup-view">
       <div className="setup-card">
+        <div className="eyebrow setup-eyebrow">FOCUS · 专注</div>
         <h1 className="setup-title">🌱 Focus Tree</h1>
         <p className="setup-subtitle">每一次专注，种下一片森林</p>
 
