@@ -55,13 +55,16 @@ function GrowthTree({ stage }: { stage: number }) {
           <path d="M 96 143 Q 100 147 104 143" fill="none" stroke="#5a3420" strokeWidth="1" opacity="0.7" />
         </g>
       )}
-      {/* 根系：从茎底部向两侧舒展（根茎连贯） */}
+      {/* 根系：从茎底部向两侧舒展（根茎连贯；主根带分叉，与专注树同步细节） */}
       {showRoots && (
-        <g className="splash-roots" stroke="#7a4a2a" strokeWidth="2" strokeLinecap="round" fill="none">
-          <path d="M 100 146 Q 88 140 80 148" />
-          <path d="M 100 146 Q 112 140 121 147" />
-          <path d="M 100 146 Q 94 152 90 158" />
-          <path d="M 100 146 Q 106 152 110 157" />
+        <g className="splash-roots" stroke="#7a4a2a" strokeWidth="2.4" strokeLinecap="round" fill="none">
+          <path d="M 100 146 Q 88 138 78 147" />
+          <path d="M 100 146 Q 112 138 122 146" />
+          <path d="M 100 146 Q 94 153 89 160" />
+          <path d="M 100 146 Q 106 153 111 159" />
+          {/* 侧根分叉（细节同步） */}
+          <path d="M 86 143 Q 80 144 76 140" strokeWidth="1.6" opacity="0.8" />
+          <path d="M 114 143 Q 120 144 125 139" strokeWidth="1.6" opacity="0.8" />
         </g>
       )}
       {/* 茎 */}
